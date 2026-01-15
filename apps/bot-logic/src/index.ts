@@ -71,6 +71,12 @@ async function tick() {
   const ordersToInsert: any[] = [];
   const ordersToCancelIds: string[] = [];
 
+  // Track ephemeral balance to prevent overdrafts within the same tick
+  const botAvailableBalance = new Map<string, number>();
+  for (const bot of bots) {
+    botAvailableBalance.set(bot.id, Number(bot.balance_cents));
+  }
+
   // 2. Process Logic per Stock
   for (const stock of stocks) {
     const currentPrice = Number(stock.current_price_cents);
@@ -132,6 +138,12 @@ async function tick() {
 
           if (shouldCancel) {
             ordersToCancelIds.push(order.id);
+            // If we are cancelling a BUY, we effectively get that money back for this tick's budget
+            if (order.type === 'BUY') {
+              const currentBal = botAvailableBalance.get(bot.id) || 0;
+              const refund = Number(order.limit_price_cents) * order.quantity;
+              botAvailableBalance.set(bot.id, currentBal + refund);
+            }
           }
         }
 
@@ -191,7 +203,11 @@ async function tick() {
       // Constraints
       if (action === 'BUY') {
         const cost = limitPrice * quantity;
-        if (balance < cost) continue; // Too poor
+        const availableBalance = botAvailableBalance.get(bot.id) || 0;
+        if (availableBalance < cost) continue; // Too poor
+
+        // Deduct from tracked balance so we don't overspend on the next stock
+        botAvailableBalance.set(bot.id, availableBalance - cost);
       } else {
         if (sharesOwned < quantity) continue; // Not enough shares
       }
