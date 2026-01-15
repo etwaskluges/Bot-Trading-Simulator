@@ -1,4 +1,5 @@
 # Bot Trading Simulator
+
 A high-performance bot trading simulation environment. Seed your assets, deploy your fleet, and watch the market evolve in real-time.
 
 ## Local development
@@ -22,6 +23,7 @@ bun run dev:db
 
 # open supabase dashboard at http://127.0.0.1:54323/project/default
 ```
+
 ## Generate types and schema
 
 ```bash
@@ -50,10 +52,6 @@ bun run dev:web
 # run bots (after seeding)
 bun run dev:bot
 ```
-
-
-
-
 
 ## Packages
 
