@@ -417,10 +417,11 @@ const BoersePage = () => {
                       type="number"
                       domain={xAxisDomain}
                       ticks={xAxisTicks}
-                      tickFormatter={formatXAxis}
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={10}
-                      tickMargin={12}
+                      tick={({ x, y, payload }) => (
+                        <text x={x} y={y} dy={12} textAnchor="middle" className="text-muted-foreground fill-current text-[10px] font-medium">
+                          {formatXAxis(payload.value)}
+                        </text>
+                      )}
                       axisLine={false}
                       tickLine={false}
                       interval={0}
@@ -429,10 +430,11 @@ const BoersePage = () => {
                     <YAxis
                       domain={['auto', 'auto']}
                       padding={{ top: 20, bottom: 20 }}
-                      tickFormatter={(val) => `$${(val / 100).toFixed(0)}`}
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      tickMargin={12}
+                      tick={({ x, y, payload }) => (
+                        <text x={x} y={y} dx={-12} dy={4} textAnchor="end" className="text-muted-foreground fill-current text-[11px] font-medium">
+                          {`$${(payload.value / 100).toFixed(0)}`}
+                        </text>
+                      )}
                       axisLine={false}
                       tickLine={false}
                     />

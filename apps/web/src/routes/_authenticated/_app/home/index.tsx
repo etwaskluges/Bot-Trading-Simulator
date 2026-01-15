@@ -58,8 +58,8 @@ function LandingPage() {
             </div>
 
             <div className="relative z-10 space-y-6 text-left">
-              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
-                <Zap size={24} className="fill-current" />
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform duration-500">
+                <Zap size={24} />
               </div>
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold tracking-tight">Seeding Area</h3>
