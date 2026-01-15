@@ -13,7 +13,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Loader2, Database, ArrowRight } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 type Timespan = '5m' | '10m' | '1h' | '1d';
 
@@ -165,6 +165,14 @@ const BoersePage = () => {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [timespan, setTimespan] = useState<Timespan>('5m')
 
+  // Real-time tick for chart updates
+  const [currentTick, setCurrentTick] = useState(Date.now())
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTick(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   // Fetch all stocks for dropdown
   const { data: allStocks, isLoading: isLoadingStocks } = useQuery({
     queryKey: ['all-stocks'],
@@ -199,13 +207,29 @@ const BoersePage = () => {
   // Pre-process chart data to include timestamps as numbers for Recharts
   const chartData = useMemo(() => {
     if (!data?.trades) return [];
-    return data.trades.map((t: any) => ({
+
+    const points = data.trades.map((t: any) => ({
       ...t,
       // Convert executed_at string to timestamp number for proper XAxis spacing
       timestamp: new Date(t.executed_at).getTime(),
       price: Number(t.execution_price_cents)
     }));
-  }, [data?.trades]);
+
+    // Add a live point at the current time to extend the line
+    if (points.length > 0) {
+      const lastPoint = points[points.length - 1];
+      // Only extend if current time is ahead of last point
+      if (currentTick > lastPoint.timestamp) {
+        points.push({
+          ...lastPoint, // Copy the last point's data
+          timestamp: currentTick, // Update time to now
+          // Price remains the same
+        });
+      }
+    }
+
+    return points;
+  }, [data?.trades, currentTick]);
 
   // Calculate high/low for the current view
   const { high, low } = useMemo(() => {
@@ -221,7 +245,7 @@ const BoersePage = () => {
   // Calculate stable domain and fixed ticks to prevent "moving" x-axis text
   const { xAxisDomain, xAxisTicks } = useMemo(() => {
     // Snap to nearest second to avoid jitter
-    const now = Math.floor(Date.now() / 1000) * 1000;
+    const now = Math.floor(currentTick / 1000) * 1000;
     const currentOption = timespanOptions.find(o => o.value === timespan);
     const ms = currentOption?.ms || 10 * 60 * 1000;
     const start = now - ms;
@@ -237,7 +261,7 @@ const BoersePage = () => {
         now
       ]
     };
-  }, [timespan, data]); // Sync updates with data fetches to keep the axis sliding
+  }, [timespan, currentTick]); // Sync updates with clock
 
   // 1. Loading State
   if (isLoadingStocks) {

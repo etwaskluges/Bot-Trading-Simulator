@@ -1,36 +1,7 @@
-import { pgTable, index, foreignKey, check, uuid, text, bigint, integer, timestamp, boolean, unique, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, check, uuid, text, boolean, bigint, unique, integer, index, foreignKey, timestamp, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
-
-export const orders = pgTable("orders", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	stock_id: uuid().notNull(),
-	trader_id: uuid().notNull(),
-	type: text().notNull(),
-	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	limit_price_cents: bigint({ mode: "number" }).notNull(),
-	quantity: integer().notNull(),
-	status: text().default('OPEN').notNull(),
-	created_at: timestamp({ withTimezone: true, mode: 'string' }).defaultNow(),
-}, (table) => {
-	return {
-		idx_orders_stock_status: index("idx_orders_stock_status").using("btree", table.stock_id.asc().nullsLast().op("int8_ops"), table.status.asc().nullsLast().op("int8_ops"), table.type.asc().nullsLast().op("text_ops"), table.limit_price_cents.asc().nullsLast().op("uuid_ops")),
-		idx_orders_trader_status: index("idx_orders_trader_status").using("btree", table.trader_id.asc().nullsLast().op("uuid_ops"), table.status.asc().nullsLast().op("uuid_ops")),
-		orders_stock_id_fkey: foreignKey({
-			columns: [table.stock_id],
-			foreignColumns: [stocks.id],
-			name: "orders_stock_id_fkey"
-		}).onDelete("cascade"),
-		orders_trader_id_fkey: foreignKey({
-			columns: [table.trader_id],
-			foreignColumns: [traders.id],
-			name: "orders_trader_id_fkey"
-		}).onDelete("cascade"),
-		orders_type_check: check("orders_type_check", sql`type = ANY (ARRAY['BUY'::text, 'SELL'::text])`),
-		orders_status_check: check("orders_status_check", sql`status = ANY (ARRAY['OPEN'::text, 'FILLED'::text, 'CANCELLED'::text])`),
-	}
-});
 
 export const traders = pgTable("traders", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -55,6 +26,35 @@ export const stocks = pgTable("stocks", {
 }, (table) => {
 	return {
 		stocks_symbol_key: unique("stocks_symbol_key").on(table.symbol),
+	}
+});
+
+export const orders = pgTable("orders", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	stock_id: uuid().notNull(),
+	trader_id: uuid().notNull(),
+	type: text().notNull(),
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	limit_price_cents: bigint({ mode: "number" }).notNull(),
+	quantity: integer().notNull(),
+	status: text().default('OPEN').notNull(),
+	created_at: timestamp({ withTimezone: true, mode: 'string' }).defaultNow(),
+}, (table) => {
+	return {
+		idx_orders_stock_status: index("idx_orders_stock_status").using("btree", table.stock_id.asc().nullsLast().op("text_ops"), table.status.asc().nullsLast().op("int8_ops"), table.type.asc().nullsLast().op("uuid_ops"), table.limit_price_cents.asc().nullsLast().op("uuid_ops")),
+		idx_orders_trader_status: index("idx_orders_trader_status").using("btree", table.trader_id.asc().nullsLast().op("uuid_ops"), table.status.asc().nullsLast().op("text_ops")),
+		orders_stock_id_fkey: foreignKey({
+			columns: [table.stock_id],
+			foreignColumns: [stocks.id],
+			name: "orders_stock_id_fkey"
+		}).onDelete("cascade"),
+		orders_trader_id_fkey: foreignKey({
+			columns: [table.trader_id],
+			foreignColumns: [traders.id],
+			name: "orders_trader_id_fkey"
+		}).onDelete("cascade"),
+		orders_type_check: check("orders_type_check", sql`type = ANY (ARRAY['BUY'::text, 'SELL'::text])`),
+		orders_status_check: check("orders_status_check", sql`status = ANY (ARRAY['OPEN'::text, 'FILLED'::text, 'CANCELLED'::text])`),
 	}
 });
 
