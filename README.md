@@ -9,7 +9,6 @@ nvm use v20.18.0
 # install dependencies
 bun install
 
-# copy the SUPABASE_ANON_KEY from the console into apps/web/.env and apps/bot-logic/.env
 ```
 
 ### Start Database
@@ -18,7 +17,7 @@ bun install
 # run local supabase server
 bun run dev:db
 
-# copy the SUPABASE_ANON_KEY from the console into apps/web/.env and apps/my-app/.env
+# copy the SUPABASE_ANON_KEY from the console into apps/web/.env and apps/bot-logic/.env
 
 # open supabase dashboard at http://127.0.0.1:54323/project/default
 ```
