@@ -16,6 +16,7 @@ import {
   RefreshCcw,
   ZapIcon,
   TrendingUpIcon,
+  X,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
@@ -27,7 +28,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '~/lib/components/ui/sidebar'
+import { Button } from '~/lib/components/ui/button'
 import { NavDocuments } from '~/lib/components/ui/nav-documents'
 import { NavMain } from '~/lib/components/ui/nav-main'
 import { NavSecondary } from '~/lib/components/ui/nav-secondary'
@@ -122,14 +125,15 @@ const data = {
     },
     {
       title: 'Get Help',
-      url: '#',
+      url: 'https://www.hilfe-info.de/Webs/hilfeinfo/EN/HelpAndAdvice/Psychological_support/PsychologischeUnterstuetzung_node.html',
       icon: HelpCircleIcon,
     },
+    /*
     {
       title: 'Search',
       url: '#',
       icon: SearchIcon,
-    },
+    },*/
   ],
 
   // documents: [
@@ -152,18 +156,33 @@ const data = {
 }
 
 export function AppSidebar({ variant = 'inset' }: AppSidebarProps) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
   return (
     <Sidebar variant={variant}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link to="/home">
-                <span className="text-base font-semibold">Boilerplate</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center justify-between">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+                <Link to="/home">
+                  <span className="text-base font-semibold">Bot Trading Simulator</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setOpenMobile(false)}
+            >
+              <X className="size-4" />
+              <span className="sr-only">Close sidebar</span>
+            </Button>
+          )}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '~/lib/components/ui/sidebar'
 
 export function NavMain({
@@ -21,6 +22,13 @@ export function NavMain({
   }[]
 }) {
   const location = useLocation()
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   return (
     <SidebarGroup>
@@ -49,7 +57,7 @@ export function NavMain({
             const isActive = location.pathname === item.url
             return (
               <SidebarMenuItem key={item.title}>
-                <Link to={item.url} className="w-full">
+                <Link to={item.url} className="w-full" onClick={handleLinkClick}>
                   <SidebarMenuButton
                     tooltip={item.title}
                     className={isActive ? 'bg-accent text-accent-foreground' : ''}

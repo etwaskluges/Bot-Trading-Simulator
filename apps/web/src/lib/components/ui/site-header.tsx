@@ -9,7 +9,7 @@ export function SiteHeader() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <h1 className="text-base font-medium">Bot Trading Simulator</h1>
-        <ThemeToggle />
+        <ThemeToggle className="ml-auto" />
       </div>
     </header>
   )

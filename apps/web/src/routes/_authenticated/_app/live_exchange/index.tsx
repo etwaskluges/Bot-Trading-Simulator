@@ -12,7 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts'
-import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Loader2, Database, ArrowRight } from 'lucide-react'
+import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Loader2, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 
 type Timespan = '5m' | '10m' | '1h' | '1d';
@@ -55,19 +55,19 @@ const getMarketData = createServerFn({ method: 'GET' })
     switch (timespan) {
       case '5m':
         intervalValue = sql`now() - interval '5 minutes'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 2) * 2)`; // 5s buckets
+        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 2) * 2)`; // 2s buckets
         break;
       case '10m':
         intervalValue = sql`now() - interval '10 minutes'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 5) * 5)`; // 5s buckets
+        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 4) * 4)`; // 4s buckets
         break;
       case '1h':
         intervalValue = sql`now() - interval '1 hour'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 30) * 30)`; // 30s buckets
+        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 25) * 25)`; // 25s buckets
         break;
       case '1d':
         intervalValue = sql`now() - interval '1 day'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 300) * 300)`; // 5m buckets
+        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 600) * 600)`; // 10m buckets
         break;
       default:
         intervalValue = sql`now() - interval '5 minutes'`;
@@ -129,7 +129,11 @@ const getMarketData = createServerFn({ method: 'GET' })
           eq(schema.portfolios.stock_id, stock.id)
         )
       )
-      .orderBy(schema.traders.name)
+
+    // Sort numerically (Bot 1, Bot 2 ... Bot 10) instead of alphabetically
+    botPortfolios.sort((a, b) =>
+      (a.trader_name || '').localeCompare(b.trader_name || '', undefined, { numeric: true, sensitivity: 'base' })
+    )
 
     // E. Get recent bot orders for this stock
     const recentBotOrders = await postgres_db
@@ -164,12 +168,39 @@ const getMarketData = createServerFn({ method: 'GET' })
 const BoersePage = () => {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [timespan, setTimespan] = useState<Timespan>('5m')
+  // View mode for bot fleet
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [filterText, setFilterText] = useState('')
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false)
+
+  // Sort state - extended to support custom sorting modes
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' | 'idle' | null }>({ key: null, direction: null });
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current.key === key) {
+        // Special 4-state cycle for last_activity
+        if (key === 'last_activity') {
+          if (current.direction === 'asc') return { key, direction: 'desc' };
+          if (current.direction === 'desc') return { key, direction: 'idle' };
+          if (current.direction === 'idle') return { key: null, direction: null };
+        } else {
+          // Standard 3-state cycle for other columns
+          if (current.direction === 'asc') return { key, direction: 'desc' };
+          if (current.direction === 'desc') return { key: null, direction: null };
+        }
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+
 
   // Real-time tick for chart updates
   const [currentTick, setCurrentTick] = useState(Date.now())
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTick(Date.now()), 1000)
+    const timer = setInterval(() => setCurrentTick(Date.now()), 2000)
     return () => clearInterval(timer)
   }, [])
 
@@ -204,16 +235,110 @@ const BoersePage = () => {
     enabled: !!selectedSymbol
   })
 
+  // Filter and Sort bots
+  const filteredBots = useMemo(() => {
+    if (!data || !data.botPortfolios) return []
+    let result = [...data.botPortfolios];
+
+    if (filterText) {
+      const lower = filterText.toLowerCase()
+      result = result.filter((b: any) =>
+        (b.trader_name || '').toLowerCase().includes(lower) ||
+        (b.strategy || '').toLowerCase().includes(lower)
+      )
+    }
+
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        // Special handling for last_activity sorting
+        if (sortConfig.key === 'last_activity') {
+          const aAction = data.recentBotOrders.find((order: any) => order.trader_id === a.trader_id);
+          const bAction = data.recentBotOrders.find((order: any) => order.trader_id === b.trader_id);
+
+          const aType = aAction ? aAction.type : 'IDLE';
+          const bType = bAction ? bAction.type : 'IDLE';
+
+          // Define sort order based on direction
+          let order: string[];
+          if (sortConfig.direction === 'asc') {
+            order = ['BUY', 'SELL', 'IDLE']; // First click
+          } else if (sortConfig.direction === 'desc') {
+            order = ['SELL', 'IDLE', 'BUY']; // Second click
+          } else if (sortConfig.direction === 'idle') {
+            order = ['IDLE', 'BUY', 'SELL']; // Third click
+          } else {
+            return 0;
+          }
+
+          const aIndex = order.indexOf(aType);
+          const bIndex = order.indexOf(bType);
+
+          return aIndex - bIndex;
+        }
+
+        // Standard sorting for other columns
+        let aValue = a[sortConfig.key!];
+        let bValue = b[sortConfig.key!];
+
+        // Handle numeric values
+        if (sortConfig.key === 'balance_cents' || sortConfig.key === 'shares_owned') {
+          aValue = Number(aValue);
+          bValue = Number(bValue);
+        } else {
+          // String comparison
+          aValue = (aValue || '').toString().toLowerCase();
+          bValue = (bValue || '').toString().toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, filterText, sortConfig])
+
   // Pre-process chart data to include timestamps as numbers for Recharts
   const chartData = useMemo(() => {
-    if (!data?.trades) return [];
+    if (!data) return [];
 
-    const points = data.trades.map((t: any) => ({
-      ...t,
-      // Convert executed_at string to timestamp number for proper XAxis spacing
-      timestamp: new Date(t.executed_at).getTime(),
-      price: Number(t.execution_price_cents)
-    }));
+    let points: any[] = [];
+
+    if (data.trades && data.trades.length > 0) {
+      points = data.trades.map((t: any) => ({
+        ...t,
+        // Convert executed_at string to timestamp number for proper XAxis spacing
+        timestamp: new Date(t.executed_at).getTime(),
+        price: Number(t.execution_price_cents)
+      }));
+    } else if (data.stock) {
+      // No trades, use stock current price
+      const currentOption = timespanOptions.find(o => o.value === timespan);
+      const ms = currentOption?.ms || 5 * 60 * 1000;
+
+      points = [{
+        timestamp: currentTick - ms,
+        price: Number(data.stock.current_price_cents),
+        executed_at: new Date(currentTick - ms).toISOString(),
+        execution_price_cents: data.stock.current_price_cents
+      }];
+    }
+
+    // Extend line backwards to start of view if needed
+    if (points.length > 0) {
+      const currentOption = timespanOptions.find(o => o.value === timespan);
+      const ms = currentOption?.ms || 5 * 60 * 1000;
+      const startTime = currentTick - ms;
+      const firstPoint = points[0];
+
+      if (firstPoint.timestamp > startTime) {
+        points.unshift({
+          ...firstPoint,
+          timestamp: startTime
+        });
+      }
+    }
 
     // Add a live point at the current time to extend the line
     if (points.length > 0) {
@@ -229,7 +354,7 @@ const BoersePage = () => {
     }
 
     return points;
-  }, [data?.trades, currentTick]);
+  }, [data, currentTick, timespan]);
 
   // Calculate high/low for the current view
   const { high, low } = useMemo(() => {
@@ -330,6 +455,8 @@ const BoersePage = () => {
   const endPrice = trades.length > 0 ? Number(lastTrade.execution_price_cents) : Number(stock.current_price_cents)
   const isUp = endPrice >= startPrice
 
+
+
   const formatXAxis = (tick: number) => {
     const date = new Date(tick);
     if (timespan === '1d') {
@@ -364,375 +491,545 @@ const BoersePage = () => {
   const maxBidQty = Math.max(...bidOrders.map((o: any) => o.quantity), 1);
   const maxAskQty = Math.max(...askOrders.map((o: any) => o.quantity), 1);
 
-  return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 p-6 md:p-8">
-      <div className="max-w-[1600px] mx-auto space-y-6">
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-4 bg-card p-6 rounded-2xl border shadow-lg h-[450px] flex flex-col transition-all duration-300 relative overflow-hidden">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-primary/10 rounded-lg">
-                    <TrendingUp size={16} className="text-primary" />
+
+  return (
+    <div className="min-h-screen bg-background p-3 md:p-8 overflow-x-hidden">
+      <div className="max-w-[1600px] w-full mx-auto space-y-8 md:space-y-12">
+
+        {/* TOP SECTION: CHART & ORDER BOOK */}
+        <div className="space-y-12">
+
+          {/* LEFT: PRICE HISTORY CHART */}
+          <div className="h-[450px] flex flex-col">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4 mb-8">
+              <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/5 rounded-full">
+                    <TrendingUp size={20} className="text-primary" />
                   </div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] whitespace-nowrap hidden sm:block">
-                    Price History
-                  </span>
+                  <h2 className="text-lg font-bold tracking-tight">Price History</h2>
                 </div>
 
-                <div className="h-6 w-px bg-border hidden md:block" />
+                <div className="h-4 w-px bg-border/50" />
 
-                <div className="relative">
-                  <select
-                    id="stock-select"
-                    value={selectedSymbol || ''}
-                    onChange={(e) => setSelectedSymbol(e.target.value)}
-                    className="pl-2 pr-8 py-1.5 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 text-[13px] font-semibold min-w-[180px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer tracking-tight"
+                <div className="relative z-30 w-full sm:w-auto">
+                  <button
+                    onClick={() => setIsStockDropdownOpen(!isStockDropdownOpen)}
+                    className={`
+                      flex items-center justify-between sm:justify-start w-full sm:w-auto gap-3 pl-4 pr-2 py-1.5 rounded-lg border transition-all group outline-none
+                      ${isStockDropdownOpen
+                        ? 'bg-card border-primary ring-4 ring-primary/10 shadow-lg'
+                        : 'bg-card/50 hover:bg-card border-border hover:border-primary/50 hover:shadow-md'
+                      }
+                    `}
                   >
-                    {allStocks.map((stock: any) => (
-                      <option key={stock.symbol} value={stock.symbol}>
-                        {stock.symbol} — {stock.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <ArrowDown size={12} />
-                  </div>
+                    <div className="flex flex-col items-start gap-0.5 mr-2">
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+                        Select Asset
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-foreground tracking-tight leading-none group-hover:text-primary transition-colors">
+                          {selectedSymbol}
+                        </span>
+                        {selectedSymbol && (
+                          <span className="text-muted-foreground font-medium text-[10px] truncate max-w-[100px] hidden sm:block leading-none">
+                            {allStocks.find((s: any) => s.symbol === selectedSymbol)?.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={`
+                      h-8 w-8 rounded-md flex items-center justify-center transition-all duration-300
+                      ${isStockDropdownOpen ? 'bg-primary text-primary-foreground rotate-180' : 'bg-muted/50 group-hover:bg-primary/10 text-muted-foreground group-hover:text-primary'}
+                    `}>
+                      <ArrowDown size={14} strokeWidth={3} />
+                    </div>
+                  </button>
+
+                  {isStockDropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-30"
+                        onClick={() => setIsStockDropdownOpen(false)}
+                      />
+                      <div className="absolute top-full left-0 mt-2 w-full sm:w-[300px] max-h-[400px] overflow-y-auto bg-card/95 backdrop-blur-2xl border border-border/50 rounded-lg shadow-2xl z-40 py-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="px-4 py-3 flex items-center justify-between border-b border-border/50 mb-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                            Available Assets
+                          </span>
+                          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                            {allStocks.length}
+                          </span>
+                        </div>
+                        {allStocks.map((stock: any) => (
+                          <button
+                            key={stock.symbol}
+                            onClick={() => {
+                              setSelectedSymbol(stock.symbol);
+                              setIsStockDropdownOpen(false);
+                            }}
+                            className={`group w-full text-left px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-all border-l-2 ${selectedSymbol === stock.symbol
+                              ? 'bg-primary/5 border-primary pl-5'
+                              : 'border-transparent'
+                              }`}
+                          >
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold text-sm ${selectedSymbol === stock.symbol ? 'text-primary' : 'text-foreground'}`}>
+                                  {stock.symbol}
+                                </span>
+                                {selectedSymbol === stock.symbol && (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                )}
+                              </div>
+                              <span className="text-[11px] text-muted-foreground font-medium truncate pr-2 group-hover:text-foreground transition-colors">
+                                {stock.name}
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-mono text-xs font-bold block text-foreground">
+                                ${(Number(stock.current_price_cents) / 100).toFixed(2)}
+                              </span>
+                              <span className={`text-[10px] font-medium ${Math.random() > 0.5 ? 'text-emerald-500' : 'text-red-500'
+                                }`}>
+                                {Math.random() > 0.5 ? '+' : '-'}{(Math.random() * 2).toFixed(2)}%
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                <div className="hidden lg:flex items-center gap-4 text-[9px] font-black text-muted-foreground uppercase tracking-wider">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="opacity-40">H:</span>
-                    <span className="text-foreground/60 font-mono font-bold text-xs">${high.toFixed(2)}</span>
+              <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
+                <div className="hidden xl:flex items-center gap-6 text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                  <div className="flex items-baseline gap-2">
+                    <span className="opacity-50">High</span>
+                    <span className="text-foreground font-mono text-sm">${high.toFixed(2)}</span>
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="opacity-40">L:</span>
-                    <span className="text-foreground/60 font-mono font-bold text-xs">${low.toFixed(2)}</span>
+                  <div className="h-3 w-px bg-border/50" />
+                  <div className="flex items-baseline gap-2">
+                    <span className="opacity-50">Low</span>
+                    <span className="text-foreground font-mono text-sm">${low.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className={`text-xl font-mono font-black tracking-tighter ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                <div className="flex items-center gap-4 pl-6 border-l border-border/50">
+                  <div className={`text-2xl font-mono font-black tracking-tighter ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>
                     ${currentPrice.toFixed(2)}
                   </div>
-                  <div className={`flex items-center gap-1 font-bold text-xs px-2 py-1 rounded-lg ${isUp ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                  <div className={`flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-full ${isUp ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
                     {isUp ? <ArrowUp size={12} strokeWidth={3} /> : <ArrowDown size={12} strokeWidth={3} />}
                     {(Math.abs(1 - (startPrice / endPrice)) * 100).toFixed(2)}%
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex-1 flex flex-row gap-4 min-h-0 relative">
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 10, right: 40, left: 10, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.4} />
-                        <stop offset="95%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
-                    <XAxis
-                      dataKey="timestamp"
-                      type="number"
-                      domain={xAxisDomain}
-                      ticks={xAxisTicks}
-                      tick={({ x, y, payload }) => (
-                        <text x={x} y={y} dy={12} textAnchor="middle" className="text-muted-foreground fill-current text-[10px] font-medium">
-                          {formatXAxis(payload.value)}
-                        </text>
-                      )}
-                      axisLine={false}
-                      tickLine={false}
-                      interval={0}
-                      allowDataOverflow={true}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      padding={{ top: 20, bottom: 20 }}
-                      tick={({ x, y, payload }) => (
-                        <text x={x} y={y} dx={-12} dy={4} textAnchor="end" className="text-muted-foreground fill-current text-[11px] font-medium">
-                          {`$${(payload.value / 100).toFixed(0)}`}
-                        </text>
-                      )}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const p = payload[0].payload;
-                          return (
-                            <div className="bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-xl p-3 min-w-[140px] animate-in fade-in zoom-in duration-200">
-                              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-                                <Clock size={10} />
-                                {new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+
+            <div className="flex-1 flex flex-row gap-6 min-h-0 relative">
+              <div className="flex-1 min-h-0 min-w-0 flex flex-col gap-4">
+                <div className="flex-1 min-h-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.2} />
+                          <stop offset="95%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
+                      <XAxis
+                        dataKey="timestamp"
+                        type="number"
+                        domain={xAxisDomain}
+                        ticks={xAxisTicks}
+                        tick={({ x, y, payload }) => (
+                          <text x={x} y={y} dy={16} textAnchor="middle" className="text-muted-foreground fill-current text-[10px] font-medium font-mono">
+                            {formatXAxis(payload.value)}
+                          </text>
+                        )}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDataOverflow={true}
+                        padding={{ right: 40 }}
+                      />
+                      <YAxis
+                        domain={['auto', 'auto']}
+                        padding={{ top: 20, bottom: 20 }}
+                        tick={({ x, y, payload }) => (
+                          <text x={x} y={y} dx={-12} dy={4} textAnchor="end" className="text-muted-foreground fill-current text-[11px] font-medium font-mono">
+                            {`$${(payload.value / 100).toFixed(0)}`}
+                          </text>
+                        )}
+                        axisLine={false}
+                        tickLine={false}
+                        width={45}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const p = payload[0].payload;
+                            return (
+                              <div className="bg-background/95 backdrop-blur-md border border-border/50 shadow-xl rounded-lg p-3 min-w-[140px]">
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                                  <Clock size={10} />
+                                  {new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-sm font-bold font-mono">
+                                    ${(Number(p.price) / 100).toFixed(2)}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-bold font-mono">
-                                  ${(Number(p.price) / 100).toFixed(2)}
-                                </span>
-                                <span className="text-[9px] text-muted-foreground font-medium uppercase">Price Point</span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="price"
-                      stroke={isUp ? "#10b981" : "#ef4444"}
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorPrice)"
-                      isAnimationActive={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="price"
+                        stroke={isUp ? "#10b981" : "#ef4444"}
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorPrice)"
+                        isAnimationActive={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* MOBILE TIMESPAN PICKER */}
+                <div className="flex sm:hidden items-center justify-between gap-1 bg-muted/20 p-1 rounded-lg">
+                  {timespanOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTimespan(opt.value)}
+                      className={`flex-1 px-2 py-1.5 text-[10px] font-bold rounded-md transition-all text-center ${timespan === opt.value
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/50'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* VERTICAL TIMESPAN PICKER */}
-              <div className="flex flex-col gap-1 p-1 bg-muted/20 backdrop-blur-sm rounded-2xl border border-border/30 h-fit self-center">
+              <div className="hidden sm:flex flex-col justify-center gap-2 border-l border-border/50 pl-6">
                 {timespanOptions.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setTimespan(opt.value)}
-                    className={`px-3 py-2.5 text-[10px] font-black rounded-xl transition-all flex flex-col items-center gap-1 min-w-[48px] ${timespan === opt.value
-                      ? 'bg-background shadow-md text-primary scale-105 border border-border/50'
-                      : 'text-muted-foreground/60 hover:text-foreground hover:bg-background/40'
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all text-center min-w-[50px] ${timespan === opt.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted/50'
                       }`}
                   >
-                    <span className="uppercase tracking-tighter">{opt.label}</span>
+                    {opt.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* FULL WIDTH: ORDER BOOK */}
-          <div className="lg:col-span-4 bg-card p-6 rounded-2xl border shadow-lg h-[450px] flex flex-col transition-all duration-300 relative overflow-hidden">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 bg-primary/10 rounded-lg">
-                  <Clock size={16} className="text-primary" />
+          {/* SEPARATOR */}
+          <div className="h-px w-full bg-border/50" />
+
+          {/* RIGHT: ORDER BOOK */}
+          <div className="h-[350px] flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/5 rounded-full">
+                  <Clock size={20} className="text-primary" />
                 </div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] whitespace-nowrap">
-                  Order Book
-                </span>
+                <h2 className="text-lg font-bold tracking-tight">Order Book</h2>
               </div>
-              <span className="text-[9px] font-bold text-primary/40 bg-primary/5 px-2 py-0.5 rounded-full tracking-normal">LIVE DEPTH</span>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Live</span>
+              </div>
             </div>
 
-            <div className="flex-1 min-h-0 relative z-10 transition-all overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 h-full">
-                {/* BIDS (BUYS) - Left Side */}
-                <div className="flex flex-col h-full min-h-0">
-                  <div className="flex items-center justify-between px-2 mb-4 shrink-0">
-                    <div className="text-[10px] uppercase font-bold text-emerald-500 flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Bids (Buy)
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/50 font-semibold uppercase">Volume & Price</span>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted space-y-1.5">
-                    {bidOrders.length === 0 ? (
-                      <div className="p-10 border-2 border-dashed border-emerald-500/10 rounded-2xl flex items-center justify-center text-muted-foreground font-medium italic text-sm">
-                        Waiting for buy liquidity...
-                      </div>
-                    ) : (
-                      bidOrders.map((order: any) => (
-                        <div
-                          key={order.id}
-                          className="group relative flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/5 bg-emerald-500/[0.01] hover:bg-emerald-500/[0.04] transition-all duration-200 overflow-hidden"
-                        >
-                          {/* Depth Bar */}
-                          <div
-                            className="absolute right-0 top-0 bottom-0 bg-emerald-500/10 pointer-events-none transition-all duration-500"
-                            style={{ width: `${(order.quantity / maxBidQty) * 100}%` }}
-                          />
-
-                          <div className="flex items-center gap-3 relative z-10">
-                            <div className="bg-emerald-500/10 p-1 rounded-md">
-                              <ArrowUp size={10} className="text-emerald-500 stroke-[3]" />
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-bold font-mono">
-                                {order.quantity} <span className="opacity-40 font-medium">QTY</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right relative z-10">
-                            <div className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                              ${(Number(order.limit_price_cents) / 100).toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="grid grid-cols-2 gap-2 md:gap-8 text-[10px] font-bold text-muted-foreground uppercase tracking-widest pb-4 border-b border-border/50 mb-4">
+                <div className="flex justify-between px-2">
+                  <span>Bid Vol</span>
+                  <span>Bid Price</span>
                 </div>
+                <div className="flex justify-between px-2">
+                  <span>Ask Price</span>
+                  <span>Ask Vol</span>
+                </div>
+              </div>
 
-                {/* ASKS (SELLS) - Right Side */}
-                <div className="flex flex-col h-full min-h-0">
-                  <div className="flex items-center justify-between px-2 mb-4 shrink-0">
-                    <div className="text-[10px] uppercase font-bold text-red-500 flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                      Asks (Sell)
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/50 font-semibold uppercase">Volume & Price</span>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted space-y-1.5">
-                    {askOrders.length === 0 ? (
-                      <div className="p-10 border-2 border-dashed border-red-500/10 rounded-2xl flex items-center justify-center text-muted-foreground font-medium italic text-sm">
-                        Waiting for sell liquidity...
-                      </div>
-                    ) : (
-                      askOrders.map((order: any) => (
+              <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide">
+                <div className="grid grid-cols-2 gap-2 md:gap-8 relative py-2">
+                  {/* BIDS - Right Align Price, Left Align Vol */}
+                  <div className="flex flex-col gap-1.5">
+                    {bidOrders.map((order: any) => (
+                      <div key={order.id} className="relative flex items-center justify-between py-1 px-2 text-sm font-mono group">
+                        {/* Depth Bar Background */}
                         <div
-                          key={order.id}
-                          className="group relative flex items-center justify-between p-2.5 rounded-lg border border-red-500/5 bg-red-500/[0.01] hover:bg-red-500/[0.04] transition-all duration-200 overflow-hidden"
-                        >
-                          {/* Depth Bar */}
-                          <div
-                            className="absolute left-0 top-0 bottom-0 bg-red-500/10 pointer-events-none transition-all duration-500"
-                            style={{ width: `${(order.quantity / maxAskQty) * 100}%` }}
-                          />
+                          className="absolute top-0 bottom-0 right-0 bg-emerald-500/5 transition-all duration-300 rounded-sm"
+                          style={{ width: `${(order.quantity / maxBidQty) * 100}%` }}
+                        />
 
-                          <div className="flex items-center gap-3 relative z-10">
-                            <div className="bg-red-500/10 p-1 rounded-md">
-                              <ArrowDown size={10} className="text-red-500 stroke-[3]" />
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-bold font-mono">
-                                {order.quantity} <span className="opacity-40 font-medium">QTY</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right relative z-10">
-                            <div className="text-sm font-bold font-mono text-red-600 dark:text-red-400">
-                              ${(Number(order.limit_price_cents) / 100).toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      ))
+                        <span className="relative z-10 text-muted-foreground text-xs font-medium">{order.quantity}</span>
+                        <span className="relative z-10 text-emerald-600 dark:text-emerald-400 font-bold">${(Number(order.limit_price_cents) / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {bidOrders.length === 0 && (
+                      <div className="text-center py-10 text-xs text-muted-foreground font-medium italic opacity-50">Empty Bids</div>
                     )}
                   </div>
+
+                  {/* ASKS - Left Align Price, Right Align Vol */}
+                  <div className="flex flex-col gap-1.5">
+                    {askOrders.map((order: any) => (
+                      <div key={order.id} className="relative flex items-center justify-between py-1 px-2 text-sm font-mono group">
+                        {/* Depth Bar Background */}
+                        <div
+                          className="absolute top-0 bottom-0 left-0 bg-red-500/5 transition-all duration-300 rounded-sm"
+                          style={{ width: `${(order.quantity / maxAskQty) * 100}%` }}
+                        />
+
+                        <span className="relative z-10 text-red-600 dark:text-red-400 font-bold">${(Number(order.limit_price_cents) / 100).toFixed(2)}</span>
+                        <span className="relative z-10 text-muted-foreground text-xs font-medium">{order.quantity}</span>
+                      </div>
+                    ))}
+                    {askOrders.length === 0 && (
+                      <div className="text-center py-10 text-xs text-muted-foreground font-medium italic opacity-50">Empty Asks</div>
+                    )}
+                  </div>
+
+                  {/* Vertical Divider Line */}
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30 -translate-x-1/2" />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* BOTS SECTION */}
-        <div className="bg-card p-6 rounded-2xl border shadow-lg space-y-6">
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <Bot size={16} className="text-primary" />
+        {/* SEPARATOR */}
+        <div className="h-px w-full bg-border/50" />
+
+        {/* BOT FLEET SECTION */}
+        <div className="space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/5 rounded-full">
+                <Bot size={20} className="text-primary" />
               </div>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] whitespace-nowrap">
-                Bot Fleet
-              </span>
+              <h2 className="text-lg font-bold tracking-tight">Active Bot Fleet</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">{filteredBots.length} BOTS</span>
             </div>
-            <div className="text-[10px] px-3 py-1 bg-primary/10 text-primary rounded-full font-bold flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
-              LIVE SIMULATION
+
+            <div className="flex items-center gap-4">
+              {/* Search Filter */}
+              <div className="relative group">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search Bot..."
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="pl-9 pr-4 py-1.5 text-sm bg-background border border-border/50 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary w-[200px] transition-all"
+                />
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <LayoutGrid size={14} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <List size={14} />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {botPortfolios.map((bot: any) => {
-              const lastAction = getBotLastAction(bot.trader_id)
-
-              return (
-                <div
-                  key={bot.trader_id}
-                  className="group p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-all duration-300 hover:border-primary/30 relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
-                    <Bot className="h-12 w-12" />
-                  </div>
-
-                  <div className="flex items-start justify-between mb-3 relative">
-                    <div>
-                      <h3 className="font-bold text-base group-hover:text-primary transition-colors flex items-center gap-2">
-                        {bot.trader_name.replace(' Bot ', ' #')}
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">{bot.strategy || 'Momentum'} Engine</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 text-sm relative">
-                    <div className="grid grid-cols-2 gap-4 pb-3 border-b border-dashed border-muted-foreground/20">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground font-bold uppercase text-[8px] tracking-wider mb-0.5">CASH</span>
-                        <span className="font-mono text-base font-bold text-primary">${(Number(bot.balance_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-muted-foreground font-bold uppercase text-[8px] tracking-wider mb-0.5 text-right">HOLDINGS</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-mono text-base font-bold">{bot.shares_owned}</span>
-                          <span className="text-[8px] text-muted-foreground font-bold uppercase">qty</span>
+          <div className="min-h-[300px]">
+            {viewMode === 'grid' ? (
+              /* GRID VIEW */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-px bg-border/30">
+                {filteredBots.map((bot: any) => {
+                  const lastAction = getBotLastAction(bot.trader_id)
+                  return (
+                    <div key={bot.trader_id} className="group relative bg-background p-6 hover:bg-muted/5 transition-colors flex flex-col justify-between h-full">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                              {bot.trader_name}
+                            </h3>
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">{bot.strategy} Strategy</p>
+                          </div>
+                          <div className={`h-2 w-2 rounded-full ${lastAction ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30'}`} />
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="pt-2">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Latest Operation</span>
-                        <div className="h-px flex-1 bg-muted-foreground/10 mx-3" />
-                      </div>
-                      {lastAction ? (
-                        <div className={`p-3 rounded-xl border flex flex-col gap-1.5 transition-colors ${lastAction.status === 'CANCELLED'
-                          ? 'bg-slate-500/[0.03] border-slate-500/10 text-slate-700 dark:text-slate-400'
-                          : lastAction.type === 'BUY'
-                            ? 'bg-emerald-500/[0.03] border-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                            : 'bg-red-500/[0.03] border-red-500/10 text-red-700 dark:text-red-400'
-                          }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-wide">
-                              {lastAction.status === 'CANCELLED' ? (
-                                <>
-                                  <Activity size={12} className="stroke-[3]" />
-                                  Cancel {lastAction.type}
-                                </>
-                              ) : (
-                                <>
-                                  {lastAction.type === 'BUY' ? <ArrowUp size={12} className="stroke-[3]" /> : <ArrowDown size={12} className="stroke-[3]" />}
-                                  Limit {lastAction.type}
-                                </>
-                              )}
+                        <div className="flex items-end justify-between font-mono text-sm border-b border-border/30 pb-3">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Balance</span>
+                            <span>${(Number(bot.balance_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">Holdings</span>
+                            <span className="font-bold">{bot.shares_owned}<span className="text-[9px] font-sans text-muted-foreground ml-1">{stock.symbol}</span></span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider block mb-2">Last Activity</span>
+                          {lastAction ? (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className={`font-bold flex items-center gap-1.5 ${lastAction.type === 'BUY' ? 'text-emerald-500' : 'text-red-500'
+                                }`}>
+                                {lastAction.type === 'BUY' ? <ArrowUp size={12} strokeWidth={3} /> : <ArrowDown size={12} strokeWidth={3} />}
+                                {lastAction.type}
+                              </span>
+                              <span className="font-mono">{lastAction.quantity} @ ${lastAction.price.toFixed(2)}</span>
                             </div>
-                            <span className="font-bold font-mono text-[10px] opacity-60">
-                              {lastAction.quantity} SHARES
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-end font-mono">
-                            <span className={`text-lg font-black leading-none ${lastAction.status === 'CANCELLED' ? 'line-through opacity-30 italic' : ''}`}>
-                              ${lastAction.price.toFixed(2)}
-                            </span>
-                          </div>
+                          ) : (
+                            <div className="text-[10px] text-muted-foreground italic flex items-center gap-1.5">
+                              <Clock size={10} /> Waiting...
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="p-4 rounded-xl border border-dashed border-muted-foreground/10 bg-muted/10 flex items-center justify-center">
-                          <p className="text-[10px] text-muted-foreground/50 font-bold uppercase tracking-widest flex items-center gap-2">
-                            <Clock size={12} className="animate-spin-slow" /> Awaiting Signal...
-                          </p>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )
+                })}
+              </div>
+            ) : (
+              /* LIST VIEW */
+              <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead className="bg-muted/30 text-[10px] uppercase font-bold text-muted-foreground tracking-wider border-b border-border/50">
+                      <tr>
+                        <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap min-w-[200px]" onClick={() => handleSort('trader_name')}>
+                          <div className="flex items-center gap-2">
+                            Bot Name
+                            {sortConfig.key === 'trader_name' && (
+                              sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                            )}
+                          </div>
+                        </th>
+                        <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('strategy')}>
+                          <div className="flex items-center gap-2">
+                            Strategy
+                            {sortConfig.key === 'strategy' && (
+                              sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                            )}
+                          </div>
+                        </th>
+                        <th className="px-6 py-4 font-bold text-right cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('balance_cents')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Cash Balance
+                            {sortConfig.key === 'balance_cents' && (
+                              sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                            )}
+                          </div>
+                        </th>
+                        <th className="px-6 py-4 font-bold text-right cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('shares_owned')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Holdings
+                            {sortConfig.key === 'shares_owned' && (
+                              sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                            )}
+                          </div>
+                        </th>
+                        <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap min-w-[220px]" onClick={() => handleSort('last_activity')}>
+                          <div className="flex items-center gap-2">
+                            Last Activity
+                            {sortConfig.key === 'last_activity' && sortConfig.direction && (
+                              <div className="flex items-center gap-1">
+                                {sortConfig.direction === 'asc' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">B→S→I</span>}
+                                {sortConfig.direction === 'desc' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">S→I→B</span>}
+                                {sortConfig.direction === 'idle' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">I→B→S</span>}
+                              </div>
+                            )}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/30">
+                      {filteredBots.map((bot: any) => {
+                        const lastAction = getBotLastAction(bot.trader_id)
+                        return (
+                          <tr key={bot.trader_id} className="bg-transparent hover:bg-muted/20 transition-colors group">
+                            <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
+                              <span className="font-bold">{bot.trader_name}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-primary/5 text-primary uppercase tracking-wide border border-primary/10">
+                                {bot.strategy}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-right whitespace-nowrap">
+                              <span className="opacity-70 text-xs mr-0.5">$</span>
+                              {(Number(bot.balance_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </td>
+
+                            <td className="px-6 py-4 font-mono text-right whitespace-nowrap">
+                              {bot.shares_owned} <span className="text-muted-foreground text-[10px] ml-1">{stock.symbol}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {lastAction ? (
+                                <div className="flex items-center gap-3">
+                                  <div className={`
+                                    flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider
+                                    ${lastAction.type === 'BUY'
+                                      ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20'
+                                      : 'bg-red-500/5 text-red-500 border-red-500/20'
+                                    }
+                                  `}>
+                                    {lastAction.type === 'BUY' ? <ArrowUp size={10} strokeWidth={4} /> : <ArrowDown size={10} strokeWidth={4} />}
+                                    {lastAction.type}
+                                  </div>
+                                  <span className="font-mono text-xs text-muted-foreground">
+                                    <span className="text-foreground font-medium">{lastAction.quantity}</span> @ ${lastAction.price.toFixed(2)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-muted-foreground/50 text-[10px] uppercase font-bold tracking-wider">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                                  Idle
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {filteredBots.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                            <div className="flex flex-col items-center gap-3 opacity-50">
+                              <Bot size={32} />
+                              <span className="text-sm font-medium uppercase tracking-widest">No Bots Found</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              )
-            })}
+              </div>
+            )}
           </div>
         </div>
       </div>
