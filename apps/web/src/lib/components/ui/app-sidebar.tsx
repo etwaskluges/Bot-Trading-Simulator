@@ -60,7 +60,7 @@ const data = {
     },
     {
       title: 'Live Exchange',
-      url: '/live_exchange',
+      url: '/live-exchange',
       icon: TrendingUpIcon,
     },
     {
