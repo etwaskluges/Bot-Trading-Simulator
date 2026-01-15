@@ -1,9 +1,5 @@
-# Vibe Coding Boilerplate
-
-A boilerplate to quickly start vibe coding.
-
-SQL data queries and the frontend component that consumes the data are located in the same file.
-This together with end-to-end type safety makes this setup ideal for vibe coding.
+# Bot Trading Simulator
+A high-performance bot trading simulation environment. Seed your assets, deploy your fleet, and watch the market evolve in real-time.
 
 ## Local development
 
@@ -13,26 +9,10 @@ nvm use v20.18.0
 # install dependencies
 bun install
 
-# create .env file
-cp apps/web/.env.example apps/web/.env
-cp apps/my-app/.env.example apps/my-app/.env
-cp packages/db-drizzle/.env.example packages/db-drizzle/.env
-
-# start all services
-turbo dev
-
-# copy the SUPABASE_ANON_KEY from the console into apps/web/.env and apps/my-app/.env
+# copy the SUPABASE_ANON_KEY from the console into apps/web/.env and apps/bot-logic/.env
 ```
 
-### Database
-
-```bash
-# prepare database
-cd apps/supabase
-supabase migration up
-```
-
-### Start single Services
+### Start Database
 
 ```bash
 # run local supabase server
@@ -42,32 +22,38 @@ bun run dev:db
 
 # open supabase dashboard at http://127.0.0.1:54323/project/default
 ```
+## Generate types and schema
 
 ```bash
-# run app
-bun run dev:my-app
+cd packages/db-drizzle
+
+npx drizzle-kit introspect # for schema
+
+npx drizzle-kit generate # for types
+
+cd ../..
 ```
+
+## Start Web
 
 ```bash
 # run web app
 bun run dev:web
 
 # open web app at http://127.0.0.1:3000
+# Start Seeding at http://127.0.0.1:3000/seeding_area before running the bots
 ```
 
-## Generate types
+## Start Bots
 
 ```bash
-cd packages/db-drizzle
-npx drizzle-kit generate
+# run bots (after seeding)
+bun run dev:bot
 ```
 
-## Prep for first time setup
 
-```bash
-# install turbo cli
-bun install turbo --global
-```
+
+
 
 ## Packages
 

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@vibe-coding-boilerplate/db-drizzle": [
+        "../../packages/db-drizzle/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

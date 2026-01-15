@@ -2,6 +2,7 @@ import {
   ArrowUpCircleIcon,
   BarChartIcon,
   CameraIcon,
+  ChartAreaIcon,
   ClipboardListIcon,
   DatabaseIcon,
   FileCodeIcon,
@@ -12,6 +13,9 @@ import {
   SearchIcon,
   SettingsIcon,
   UsersIcon,
+  RefreshCcw,
+  ZapIcon,
+  TrendingUpIcon,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
@@ -52,9 +56,14 @@ const data = {
       icon: LayoutDashboardIcon,
     },
     {
-      title: 'Logs',
-      url: '/activity-logs',
-      icon: ClipboardListIcon,
+      title: 'Live Exchange',
+      url: '/live_exchange',
+      icon: TrendingUpIcon,
+    },
+    {
+      title: 'Seeding Area',
+      url: '/seeding_area',
+      icon: ZapIcon,
     },
   ],
   navClouds: [
@@ -122,23 +131,24 @@ const data = {
       icon: SearchIcon,
     },
   ],
-  documents: [
-    {
-      name: 'Data Library',
-      url: '#',
-      icon: DatabaseIcon,
-    },
-    {
-      name: 'Reports',
-      url: '#',
-      icon: ClipboardListIcon,
-    },
-    {
-      name: 'Word Assistant',
-      url: '#',
-      icon: FileIcon,
-    },
-  ],
+
+  // documents: [
+  //   {
+  //     name: 'Data Library',
+  //     url: '#',
+  //     icon: DatabaseIcon,
+  //   },
+  //   {
+  //     name: 'Reports',
+  //     url: '#',
+  //     icon: ClipboardListIcon,
+  //   },
+  //   {
+  //     name: 'Word Assistant',
+  //     url: '#',
+  //     icon: FileIcon,
+  //   },
+  // ],
 }
 
 export function AppSidebar({ variant = 'inset' }: AppSidebarProps) {
@@ -157,7 +167,7 @@ export function AppSidebar({ variant = 'inset' }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        {/* <NavDocuments items={data.documents} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

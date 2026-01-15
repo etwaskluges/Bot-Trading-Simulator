@@ -17,6 +17,8 @@ import { Route as AuthRegisterIndexImport } from './routes/auth/register/index'
 import { Route as AuthLoginIndexImport } from './routes/auth/login/index'
 import { Route as AuthenticatedAppIndexImport } from './routes/_authenticated/_app/index'
 import { Route as AuthenticatedAppSettingsIndexImport } from './routes/_authenticated/_app/settings/index'
+import { Route as AuthenticatedAppSeedingareaIndexImport } from './routes/_authenticated/_app/seeding_area/index'
+import { Route as AuthenticatedAppLiveexchangeIndexImport } from './routes/_authenticated/_app/live_exchange/index'
 import { Route as AuthenticatedAppHomeIndexImport } from './routes/_authenticated/_app/home/index'
 import { Route as AuthenticatedAppActivityLogsIndexImport } from './routes/_authenticated/_app/activity-logs/index'
 import { Route as AuthenticatedAppSettingsNotificationsIndexImport } from './routes/_authenticated/_app/settings/notifications/index'
@@ -58,6 +60,20 @@ const AuthenticatedAppSettingsIndexRoute =
   AuthenticatedAppSettingsIndexImport.update({
     id: '/settings/',
     path: '/settings/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+
+const AuthenticatedAppSeedingareaIndexRoute =
+  AuthenticatedAppSeedingareaIndexImport.update({
+    id: '/seeding_area/',
+    path: '/seeding_area/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+
+const AuthenticatedAppLiveexchangeIndexRoute =
+  AuthenticatedAppLiveexchangeIndexImport.update({
+    id: '/live_exchange/',
+    path: '/live_exchange/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
@@ -155,6 +171,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppHomeIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
+    '/_authenticated/_app/live_exchange/': {
+      id: '/_authenticated/_app/live_exchange/'
+      path: '/live_exchange'
+      fullPath: '/live_exchange'
+      preLoaderRoute: typeof AuthenticatedAppLiveexchangeIndexImport
+      parentRoute: typeof AuthenticatedAppImport
+    }
+    '/_authenticated/_app/seeding_area/': {
+      id: '/_authenticated/_app/seeding_area/'
+      path: '/seeding_area'
+      fullPath: '/seeding_area'
+      preLoaderRoute: typeof AuthenticatedAppSeedingareaIndexImport
+      parentRoute: typeof AuthenticatedAppImport
+    }
     '/_authenticated/_app/settings/': {
       id: '/_authenticated/_app/settings/'
       path: '/settings'
@@ -199,6 +229,8 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppActivityLogsIndexRoute: typeof AuthenticatedAppActivityLogsIndexRoute
   AuthenticatedAppHomeIndexRoute: typeof AuthenticatedAppHomeIndexRoute
+  AuthenticatedAppLiveexchangeIndexRoute: typeof AuthenticatedAppLiveexchangeIndexRoute
+  AuthenticatedAppSeedingareaIndexRoute: typeof AuthenticatedAppSeedingareaIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppSettingsAccountIndexRoute: typeof AuthenticatedAppSettingsAccountIndexRoute
   AuthenticatedAppSettingsAppearanceIndexRoute: typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -211,6 +243,9 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppActivityLogsIndexRoute:
     AuthenticatedAppActivityLogsIndexRoute,
   AuthenticatedAppHomeIndexRoute: AuthenticatedAppHomeIndexRoute,
+  AuthenticatedAppLiveexchangeIndexRoute:
+    AuthenticatedAppLiveexchangeIndexRoute,
+  AuthenticatedAppSeedingareaIndexRoute: AuthenticatedAppSeedingareaIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppSettingsAccountIndexRoute:
     AuthenticatedAppSettingsAccountIndexRoute,
@@ -244,6 +279,8 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterIndexRoute
   '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
+  '/live_exchange': typeof AuthenticatedAppLiveexchangeIndexRoute
+  '/seeding_area': typeof AuthenticatedAppSeedingareaIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -258,6 +295,8 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterIndexRoute
   '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
+  '/live_exchange': typeof AuthenticatedAppLiveexchangeIndexRoute
+  '/seeding_area': typeof AuthenticatedAppSeedingareaIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -274,6 +313,8 @@ export interface FileRoutesById {
   '/auth/register/': typeof AuthRegisterIndexRoute
   '/_authenticated/_app/activity-logs/': typeof AuthenticatedAppActivityLogsIndexRoute
   '/_authenticated/_app/home/': typeof AuthenticatedAppHomeIndexRoute
+  '/_authenticated/_app/live_exchange/': typeof AuthenticatedAppLiveexchangeIndexRoute
+  '/_authenticated/_app/seeding_area/': typeof AuthenticatedAppSeedingareaIndexRoute
   '/_authenticated/_app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/_app/settings/account/': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/_authenticated/_app/settings/appearance/': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -290,6 +331,8 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/activity-logs'
     | '/home'
+    | '/live_exchange'
+    | '/seeding_area'
     | '/settings'
     | '/settings/account'
     | '/settings/appearance'
@@ -303,6 +346,8 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/activity-logs'
     | '/home'
+    | '/live_exchange'
+    | '/seeding_area'
     | '/settings'
     | '/settings/account'
     | '/settings/appearance'
@@ -317,6 +362,8 @@ export interface FileRouteTypes {
     | '/auth/register/'
     | '/_authenticated/_app/activity-logs/'
     | '/_authenticated/_app/home/'
+    | '/_authenticated/_app/live_exchange/'
+    | '/_authenticated/_app/seeding_area/'
     | '/_authenticated/_app/settings/'
     | '/_authenticated/_app/settings/account/'
     | '/_authenticated/_app/settings/appearance/'
@@ -365,6 +412,8 @@ export const routeTree = rootRoute
         "/_authenticated/_app/",
         "/_authenticated/_app/activity-logs/",
         "/_authenticated/_app/home/",
+        "/_authenticated/_app/live_exchange/",
+        "/_authenticated/_app/seeding_area/",
         "/_authenticated/_app/settings/",
         "/_authenticated/_app/settings/account/",
         "/_authenticated/_app/settings/appearance/",
@@ -388,6 +437,14 @@ export const routeTree = rootRoute
     },
     "/_authenticated/_app/home/": {
       "filePath": "_authenticated/_app/home/index.tsx",
+      "parent": "/_authenticated/_app"
+    },
+    "/_authenticated/_app/live_exchange/": {
+      "filePath": "_authenticated/_app/live_exchange/index.tsx",
+      "parent": "/_authenticated/_app"
+    },
+    "/_authenticated/_app/seeding_area/": {
+      "filePath": "_authenticated/_app/seeding_area/index.tsx",
       "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/settings/": {

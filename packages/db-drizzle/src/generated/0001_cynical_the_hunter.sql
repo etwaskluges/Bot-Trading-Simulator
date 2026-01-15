@@ -1,0 +1,49 @@
+DROP VIEW "public"."active_customer_membership";--> statement-breakpoint
+DROP VIEW "public"."organization_billing_view";--> statement-breakpoint
+DROP VIEW "public"."store_credit_balance";--> statement-breakpoint
+DROP TABLE "job_run_status" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_type" CASCADE;--> statement-breakpoint
+DROP TABLE "migration_import_data" CASCADE;--> statement-breakpoint
+DROP TABLE "store_credit_usage_type" CASCADE;--> statement-breakpoint
+DROP TABLE "customer_membership" CASCADE;--> statement-breakpoint
+DROP TABLE "airdrop_campaign" CASCADE;--> statement-breakpoint
+DROP TABLE "birthday_reward_program" CASCADE;--> statement-breakpoint
+DROP TABLE "branding_settings" CASCADE;--> statement-breakpoint
+DROP TABLE "cashback_program" CASCADE;--> statement-breakpoint
+DROP TABLE "job_run" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_cashback_override" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_free_products" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_free_shipping" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_referral_override" CASCADE;--> statement-breakpoint
+DROP TABLE "mb_tier_reached_bonus" CASCADE;--> statement-breakpoint
+DROP TABLE "membership" CASCADE;--> statement-breakpoint
+DROP TABLE "migration_import" CASCADE;--> statement-breakpoint
+DROP TABLE "referral" CASCADE;--> statement-breakpoint
+DROP TABLE "review_reward_program" CASCADE;--> statement-breakpoint
+DROP TABLE "shop_customer" CASCADE;--> statement-breakpoint
+DROP TABLE "shop_order" CASCADE;--> statement-breakpoint
+DROP TABLE "store_credit" CASCADE;--> statement-breakpoint
+DROP TABLE "store_credit_transaction" CASCADE;--> statement-breakpoint
+DROP TABLE "bulk_operation_job" CASCADE;--> statement-breakpoint
+DROP TABLE "integration" CASCADE;--> statement-breakpoint
+DROP TABLE "job_run_task" CASCADE;--> statement-breakpoint
+DROP TABLE "organization_subscription" CASCADE;--> statement-breakpoint
+DROP TABLE "referral_page_view" CASCADE;--> statement-breakpoint
+DROP TABLE "subscription_plan" CASCADE;--> statement-breakpoint
+DROP TABLE "referred_customer_gets_type" CASCADE;--> statement-breakpoint
+DROP TABLE "referring_customer_gets_type" CASCADE;--> statement-breakpoint
+DROP TABLE "store_credit_source_type" CASCADE;--> statement-breakpoint
+DROP TABLE "usage_record" CASCADE;--> statement-breakpoint
+DROP TABLE "account" CASCADE;--> statement-breakpoint
+DROP TABLE "verification" CASCADE;--> statement-breakpoint
+DROP TABLE "organization_member" CASCADE;--> statement-breakpoint
+DROP TABLE "organization_member_invite" CASCADE;--> statement-breakpoint
+DROP TABLE "session" CASCADE;--> statement-breakpoint
+DROP TABLE "user" CASCADE;--> statement-breakpoint
+DROP TABLE "apikey" CASCADE;--> statement-breakpoint
+DROP TABLE "store_credit_setting" CASCADE;--> statement-breakpoint
+DROP TABLE "referral_program" CASCADE;--> statement-breakpoint
+DROP TABLE "shopify_flow_action" CASCADE;--> statement-breakpoint
+DROP TABLE "organization" CASCADE;--> statement-breakpoint
+DROP TABLE "customer_card_design" CASCADE;--> statement-breakpoint
+DROP TABLE "organization_integration" CASCADE;

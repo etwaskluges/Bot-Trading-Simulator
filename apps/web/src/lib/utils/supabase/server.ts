@@ -3,6 +3,10 @@ import { createServerClient } from '@supabase/ssr'
 import type { Database } from '~/types/supabase'
 
 export function getSupabaseServerClient() {
+  console.log({ 
+    SUPABASE_URL: process.env.SUPABASE_URL!, 
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY! 
+  })
   return createServerClient<Database>(
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     process.env.SUPABASE_URL!,

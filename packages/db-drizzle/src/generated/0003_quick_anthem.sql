@@ -1,0 +1,2 @@
+ALTER TABLE "portfolios" ADD CONSTRAINT "portfolios_shares_owned_check" CHECK (shares_owned >= 0);--> statement-breakpoint
+ALTER TABLE "traders" ADD CONSTRAINT "traders_balance_cents_check" CHECK (balance_cents >= 0);
