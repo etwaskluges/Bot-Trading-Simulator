@@ -12,8 +12,10 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts'
-import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Loader2, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
+import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
+import { DataTable } from '~/lib/components/ui/data-table'
+import type { ColumnDef } from '@tanstack/react-table'
 
 type Timespan = '5m' | '10m' | '1h' | '1d';
 
@@ -546,129 +548,94 @@ const BotListView = ({
   filteredBots,
   getBotLastAction,
   stockSymbol,
-  sortConfig,
-  handleSort
 }: {
   filteredBots: any[]
   getBotLastAction: (traderId: string) => any
   stockSymbol: string
-  sortConfig: { key: string | null; direction: 'asc' | 'desc' | 'idle' | null }
-  handleSort: (key: string) => void
-}) => (
-  <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm">
-    <div className="overflow-x-auto scrollbar-hide">
-      <table className="w-full text-sm text-left border-collapse">
-        <thead className="bg-muted/30 text-[10px] uppercase font-bold text-muted-foreground tracking-wider border-b border-border/50">
-          <tr>
-            <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap min-w-[200px]" onClick={() => handleSort('trader_name')}>
-              <div className="flex items-center gap-2">
-                Bot Name
-                {sortConfig.key === 'trader_name' && (
-                  sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                )}
-              </div>
-            </th>
-            <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('strategy')}>
-              <div className="flex items-center gap-2">
-                Strategy
-                {sortConfig.key === 'strategy' && (
-                  sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                )}
-              </div>
-            </th>
-            <th className="px-6 py-4 font-bold text-right cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('balance_cents')}>
-              <div className="flex items-center justify-end gap-2">
-                Cash Balance
-                {sortConfig.key === 'balance_cents' && (
-                  sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                )}
-              </div>
-            </th>
-            <th className="px-6 py-4 font-bold text-right cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap" onClick={() => handleSort('shares_owned')}>
-              <div className="flex items-center justify-end gap-2">
-                Holdings
-                {sortConfig.key === 'shares_owned' && (
-                  sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                )}
-              </div>
-            </th>
-            <th className="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors select-none whitespace-nowrap min-w-[220px]" onClick={() => handleSort('last_activity')}>
-              <div className="flex items-center gap-2">
-                Last Activity
-                {sortConfig.key === 'last_activity' && sortConfig.direction && (
-                  <div className="flex items-center gap-1">
-                    {sortConfig.direction === 'asc' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">B→S→I</span>}
-                    {sortConfig.direction === 'desc' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">S→I→B</span>}
-                    {sortConfig.direction === 'idle' && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">I→B→S</span>}
-                  </div>
-                )}
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/30">
-          {filteredBots.map((bot: any) => {
-            const lastAction = getBotLastAction(bot.trader_id)
-            return (
-              <tr key={bot.trader_id} className="bg-transparent hover:bg-muted/20 transition-colors group">
-                <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
-                  <span className="font-bold">{bot.trader_name}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-primary/5 text-primary uppercase tracking-wide border border-primary/10">
-                    {bot.strategy}
-                  </span>
-                </td>
-                <td className="px-6 py-4 font-mono text-right whitespace-nowrap">
-                  <span className="opacity-70 text-xs mr-0.5">$</span>
-                  {(Number(bot.balance_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
+}) => {
+  // Define columns for DataTable
+  const columns: ColumnDef<any>[] = useMemo(() => [
+    {
+      accessorKey: 'trader_name',
+      header: 'Bot Name',
+      cell: ({ row }) => (
+        <span className="font-bold">{row.original.trader_name}</span>
+      ),
+    },
+    {
+      accessorKey: 'strategy',
+      header: 'Strategy',
+      cell: ({ row }) => (
+        <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold bg-primary/5 text-primary uppercase tracking-wide border border-primary/10">
+          {row.original.strategy}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'balance_cents',
+      header: () => <div className="text-right">Cash Balance</div>,
+      cell: ({ row }) => (
+        <div className="font-mono text-right whitespace-nowrap">
+          <span className="opacity-70 text-xs mr-0.5">$</span>
+          {(Number(row.original.balance_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'shares_owned',
+      header: () => <div className="text-right">Holdings</div>,
+      cell: ({ row }) => (
+        <div className="font-mono text-right whitespace-nowrap">
+          {row.original.shares_owned} <span className="text-muted-foreground text-[10px] ml-1">{stockSymbol}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'last_activity',
+      header: 'Last Activity',
+      cell: ({ row }) => {
+        const lastAction = getBotLastAction(row.original.trader_id)
+        return lastAction ? (
+          <div className="flex items-center gap-3">
+            <div className={`
+              flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider
+              ${lastAction.type === 'BUY'
+                ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20'
+                : 'bg-red-500/5 text-red-500 border-red-500/20'
+              }
+            `}>
+              {lastAction.type === 'BUY' ? <ArrowUp size={10} strokeWidth={4} /> : <ArrowDown size={10} strokeWidth={4} />}
+              {lastAction.type}
+            </div>
+            <span className="font-mono text-xs text-muted-foreground">
+              <span className="text-foreground font-medium">{lastAction.quantity}</span> @ ${lastAction.price.toFixed(2)}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground/50 text-[10px] uppercase font-bold tracking-wider">
+            <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+            Idle
+          </div>
+        )
+      },
+    },
+  ], [stockSymbol, getBotLastAction])
 
-                <td className="px-6 py-4 font-mono text-right whitespace-nowrap">
-                  {bot.shares_owned} <span className="text-muted-foreground text-[10px] ml-1">{stockSymbol}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {lastAction ? (
-                    <div className="flex items-center gap-3">
-                      <div className={`
-                        flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider
-                        ${lastAction.type === 'BUY'
-                          ? 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20'
-                          : 'bg-red-500/5 text-red-500 border-red-500/20'
-                        }
-                      `}>
-                        {lastAction.type === 'BUY' ? <ArrowUp size={10} strokeWidth={4} /> : <ArrowDown size={10} strokeWidth={4} />}
-                        {lastAction.type}
-                      </div>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        <span className="text-foreground font-medium">{lastAction.quantity}</span> @ ${lastAction.price.toFixed(2)}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground/50 text-[10px] uppercase font-bold tracking-wider">
-                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-                      Idle
-                    </div>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-          {filteredBots.length === 0 && (
-            <tr>
-              <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-3 opacity-50">
-                  <Bot size={32} />
-                  <span className="text-sm font-medium uppercase tracking-widest">No Bots Found</span>
-                </div>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+  return (
+    <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm">
+      <DataTable
+        data={filteredBots}
+        columns={columns}
+        showSelectColumn={false}
+        pageSize={50}
+        emptyState={{
+          title: 'No Bots Found',
+          subtitle: 'Try adjusting your search filters'
+        }}
+      />
     </div>
-  </div>
-)
+  )
+}
 
 // 4. PAGE COMPONENT
 const BoersePage = () => {
@@ -678,27 +645,6 @@ const BoersePage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filterText, setFilterText] = useState('')
   const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false)
-
-  // Sort state - extended to support custom sorting modes
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' | 'idle' | null }>({ key: null, direction: null });
-
-  const handleSort = (key: string) => {
-    setSortConfig(current => {
-      if (current.key === key) {
-        // Special 4-state cycle for last_activity
-        if (key === 'last_activity') {
-          if (current.direction === 'asc') return { key, direction: 'desc' };
-          if (current.direction === 'desc') return { key, direction: 'idle' };
-          if (current.direction === 'idle') return { key: null, direction: null };
-        } else {
-          // Standard 3-state cycle for other columns
-          if (current.direction === 'asc') return { key, direction: 'desc' };
-          if (current.direction === 'desc') return { key: null, direction: null };
-        }
-      }
-      return { key, direction: 'asc' };
-    });
-  };
 
 
 
@@ -741,7 +687,7 @@ const BoersePage = () => {
     enabled: !!selectedSymbol
   })
 
-  // Filter and Sort bots
+  // Filter bots
   const filteredBots = useMemo(() => {
     if (!data || !data.botPortfolios) return []
     let result = [...data.botPortfolios];
@@ -754,56 +700,8 @@ const BoersePage = () => {
       )
     }
 
-    if (sortConfig.key && sortConfig.direction) {
-      result.sort((a: any, b: any) => {
-        // Special handling for last_activity sorting
-        if (sortConfig.key === 'last_activity') {
-          const aAction = data.recentBotOrders.find((order: any) => order.trader_id === a.trader_id);
-          const bAction = data.recentBotOrders.find((order: any) => order.trader_id === b.trader_id);
-
-          const aType = aAction ? aAction.type : 'IDLE';
-          const bType = bAction ? bAction.type : 'IDLE';
-
-          // Define sort order based on direction
-          let order: string[];
-          if (sortConfig.direction === 'asc') {
-            order = ['BUY', 'SELL', 'IDLE']; // First click
-          } else if (sortConfig.direction === 'desc') {
-            order = ['SELL', 'IDLE', 'BUY']; // Second click
-          } else if (sortConfig.direction === 'idle') {
-            order = ['IDLE', 'BUY', 'SELL']; // Third click
-          } else {
-            return 0;
-          }
-
-          const aIndex = order.indexOf(aType);
-          const bIndex = order.indexOf(bType);
-
-          return aIndex - bIndex;
-        }
-
-        // Standard sorting for other columns
-        let aValue = a[sortConfig.key!];
-        let bValue = b[sortConfig.key!];
-
-        // Handle numeric values
-        if (sortConfig.key === 'balance_cents' || sortConfig.key === 'shares_owned') {
-          aValue = Number(aValue);
-          bValue = Number(bValue);
-        } else {
-          // String comparison
-          aValue = (aValue || '').toString().toLowerCase();
-          bValue = (bValue || '').toString().toLowerCase();
-        }
-
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
     return result;
-  }, [data, filterText, sortConfig])
+  }, [data, filterText])
 
   // Pre-process chart data to include timestamps as numbers for Recharts
   const chartData = useMemo(() => {
@@ -1128,8 +1026,6 @@ const BoersePage = () => {
                 filteredBots={filteredBots}
                 getBotLastAction={getBotLastAction}
                 stockSymbol={stock.symbol}
-                sortConfig={sortConfig}
-                handleSort={handleSort}
               />
             )}
           </div>
