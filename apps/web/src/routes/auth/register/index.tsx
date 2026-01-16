@@ -6,21 +6,43 @@ import { UserAuthFormRegister } from './-components/user-auth-form'
 const RegistgerPage = () => {
   return (
     <>
-      <div className="md:hidden">
-        <img
-          src="/examples/authentication-light.png"
-          width={1280}
-          height={843}
-          alt="Authentication"
-          className="block dark:hidden"
-        />
-        <img
-          src="/examples/authentication-dark.png"
-          width={1280}
-          height={843}
-          alt="Authentication"
-          className="hidden dark:block"
-        />
+      <div className="container relative flex min-h-screen flex-col items-center justify-center px-6 py-10 md:hidden">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold tracking-tight">Create account</h1>
+            <Link to="/auth/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+              Login
+            </Link>
+          </div>
+          <div className="space-y-2 text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">Get started</h2>
+            <p className="text-sm text-muted-foreground">
+              Enter your email below to create your account.
+            </p>
+          </div>
+          <UserAuthFormRegister />
+          <p className="px-4 text-center text-sm text-muted-foreground">
+            By clicking continue, you agree to our{' '}
+            <a
+              href="/terms"
+              className="underline underline-offset-4 hover:text-primary"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a
+              href="/privacy"
+              className="underline underline-offset-4 hover:text-primary"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </div>
       </div>
       <div className="container relative flex-col items-center justify-center hidden h-screen md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <Link
@@ -67,13 +89,23 @@ const RegistgerPage = () => {
             <UserAuthFormRegister />
             <p className="px-8 text-sm text-center text-muted-foreground">
               By clicking continue, you agree to our{' '}
-              <Link to="/terms" className="underline underline-offset-4 hover:text-primary">
+              <a
+                href="/terms"
+                className="underline underline-offset-4 hover:text-primary"
+                target="_blank"
+                rel="noreferrer"
+              >
                 Terms of Service
-              </Link>{' '}
+              </a>{' '}
               and{' '}
-              <Link to="/privacy" className="underline underline-offset-4 hover:text-primary">
+              <a
+                href="/privacy"
+                className="underline underline-offset-4 hover:text-primary"
+                target="_blank"
+                rel="noreferrer"
+              >
                 Privacy Policy
-              </Link>
+              </a>
               .
             </p>
           </div>
