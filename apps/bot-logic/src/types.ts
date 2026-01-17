@@ -1,9 +1,14 @@
-export type BotStrategy = "momentum" | "swing" | "random";
+export interface BotStrategy {
+  strategyId?: string;
+  strategy: string[];
+}
 
 export interface BotData {
   id: string;
   balance_cents: string | number;
   strategy?: string | null;
+  strategy_id?: string | null;
+  user_id?: string | null;
   is_bot: boolean;
 }
 
@@ -41,6 +46,7 @@ export interface NewOrder {
 export interface PriceContext {
   currentPrice: number;
   previousPrice?: number;
+  lastMinuteAverage?: number;
   isPriceUp: boolean;
   isPriceDown: boolean;
 }

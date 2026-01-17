@@ -42,7 +42,7 @@ cd ../..
 bun run dev:web
 
 # open web app at http://127.0.0.1:3000
-# Start Seeding at http://127.0.0.1:3000/seeding_area before running the bots
+# Start Seeding at http://127.0.0.1:3000/seeding-area before running the bots
 ```
 
 ## Start Bots

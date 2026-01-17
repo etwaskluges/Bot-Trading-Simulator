@@ -17,6 +17,7 @@ import {
   ZapIcon,
   TrendingUpIcon,
   X,
+  ComputerIcon,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
@@ -65,8 +66,18 @@ const data = {
     },
     {
       title: 'Seeding Area',
-      url: '/seeding_area',
+      url: '/seeding-area',
       icon: ZapIcon,
+    },
+    {
+      title: 'Bot Config',
+      url: '/bot-config',
+      icon: ComputerIcon,
+    },
+    {
+      title: 'Strategy Editor',
+      url: '/strategy-editor',
+      icon: FileCodeIcon,
     },
   ],
   navClouds: [

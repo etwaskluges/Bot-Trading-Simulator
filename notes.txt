@@ -1,0 +1,32 @@
+To-Dos:
+
+json rule engine
+    -install
+    -understand
+    -implement
+
+//The new bot logic should be only for the user?? Or global
+//If stratgies only for users, every user should have an own exchange running
+//The exchange logic needs to be rewriten
+
+So... we have three default bots and unlimited private bots.
+
+/seeding-area/index.ts 
+    #Change quick bot config 
+        -Button: add bot-strategy
+        -Dropdown for bot-strategy & and number input for quantity
+    #Change Manual bot config
+        -(nothing for json rule engine) but add initial shares input
+
+
+
+fact -> stock data (Current Price, Lasthouraverage, more Ideas???)
+
+
+orderService & strategyService (update von strategy --> strageyId)
+
+
+Postgres sehr cool und optimal :Daten
+    #Nutze Postrgres Materialized View für Chartingdata
+    #Normale View für live Chartingdata
+    https://www.postgresql.org/docs/current/sql-creatematerializedview.html

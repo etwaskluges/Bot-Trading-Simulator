@@ -1,5 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import * as schema from "./generated/schema";
+import { schema } from "./schema";
 
 // Export the schema itself
 export { schema };

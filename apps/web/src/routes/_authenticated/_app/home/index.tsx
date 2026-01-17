@@ -26,7 +26,7 @@ function LandingPage() {
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link
-            to="/live_exchange"
+            to="/live-exchange"
             className="group relative bg-card p-8 rounded-[2rem] border shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
@@ -50,7 +50,7 @@ function LandingPage() {
           </Link>
 
           <Link
-            to="/seeding_area"
+            to="/seeding-area"
             className="group relative bg-card p-8 rounded-[2rem] border shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">

@@ -57,6 +57,7 @@ export interface DataTableProps<TData> {
   refetch?: () => void
   columns: ColumnDef<TData>[]
   showSelectColumn?: boolean
+  showRowActions?: boolean
   searchableColumns?: Array<keyof TData & string>
   rowViewerContent?: React.ComponentType<{ item: TData }>
   pageSize?: number
@@ -80,6 +81,7 @@ export function DataTable<TData>({
   refetch,
   columns: userColumns,
   showSelectColumn = true,
+  showRowActions = true,
   searchableColumns = [],
   rowViewerContent: CellViewerContent,
   pageSize = 100,
@@ -153,7 +155,11 @@ export function DataTable<TData>({
   }
 
   // Combine the columns
-  const allColumns = [...(showSelectColumn ? [selectColumn] : []), ...userColumns, actionsColumn]
+  const allColumns = [
+    ...(showSelectColumn ? [selectColumn] : []),
+    ...userColumns,
+    ...(showRowActions ? [actionsColumn] : []) // <--- CHANGED THIS LINE
+  ]
 
   // Use external state if provided, otherwise use internal state
   const [internalSorting, setInternalSorting] = React.useState<SortingState>([])

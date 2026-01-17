@@ -21,9 +21,10 @@
 		"dev:db": "cd apps/supabase && npx supabase start",
 		"dev:my-app": "turbo run dev --filter=@vibe-coding-boilerplate/my-app",
 		"dev:web": "turbo run dev --filter=@vibe-coding-boilerplate/web",
-		"gen:types": "cd apps/supabase && npm run gen:types",
+		"gen:types": "cd packages/db-drizzle && npx drizzle-kit introspect && node scripts/patch-generated-schema.js && npx drizzle-kit generate && cd ../..",
 		"env:check": "node scripts.js env:check",
 		"dev:bot": "cd apps/bot-logic && bun run src/index.ts && cd ../.."
+
 	},
 	"devDependencies": {
 		"supabase": "^2.20.5",

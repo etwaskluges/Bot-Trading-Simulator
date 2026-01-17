@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { postgres_db, schema } from '@vibe-coding-boilerplate/db-drizzle'
 import { desc, eq, and, sql } from 'drizzle-orm'
 import {
@@ -14,8 +14,15 @@ import {
 } from 'recharts'
 import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
+import { toast } from 'sonner'
 import { DataTable } from '~/lib/components/ui/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
+import {
+  listBotSessionsFn,
+  startBotSessionFn,
+  stopBotSessionFn,
+} from '~/lib/server/botSessions'
+import type { BotSessionSummary } from '~/types/bot-sessions'
 
 type Timespan = '5m' | '10m' | '1h' | '1d';
 
@@ -25,6 +32,35 @@ const timespanOptions: { value: Timespan; label: string; ms: number }[] = [
   { value: '1h', label: '1H', ms: 60 * 60 * 1000 },
   { value: '1d', label: '1D', ms: 24 * 60 * 60 * 1000 },
 ];
+
+const DEFAULT_RULE_SET = [
+  {
+    priority: 5,
+    conditions: {
+      all: [
+        { fact: "isPriceDown", operator: "equal", value: true },
+        { fact: "hasPosition", operator: "equal", value: false },
+      ],
+    },
+    event: {
+      type: "BUY",
+    },
+  },
+  {
+    priority: 10,
+    conditions: {
+      all: [
+        { fact: "isPriceUp", operator: "equal", value: true },
+        { fact: "hasPosition", operator: "equal", value: true },
+      ],
+    },
+    event: {
+      type: "SELL",
+    },
+  },
+];
+
+const DEFAULT_RULE_JSON = JSON.stringify(DEFAULT_RULE_SET, null, 2);
 
 // 1. SERVER FUNCTION: Get all stocks (for dropdown)
 const getAllStocks = createServerFn({ method: 'GET' }).handler(async () => {
@@ -196,7 +232,7 @@ const EmptyState = () => (
 
         <div className="pt-2">
           <Link
-            to="/seeding_area"
+            to="/seeding-area"
             className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg hover:shadow-primary/25"
           >
             Go to Seeding Area
@@ -415,7 +451,7 @@ const TimespanPicker = ({
   }
 
   return (
-    <div className="hidden sm:flex flex-col justify-center gap-2 border-l border-border/50 pl-6">
+    <div className="hidden sm:flex flex-col justify-center gap-2 border-border/50 pl-6">
       {timespanOptions.map((opt) => (
         <button
           key={opt.value}
@@ -645,6 +681,9 @@ const BoersePage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filterText, setFilterText] = useState('')
   const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false)
+  const [ruleJson, setRuleJson] = useState(DEFAULT_RULE_JSON)
+  const [sessionLabel, setSessionLabel] = useState("Live session")
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
 
 
 
@@ -655,6 +694,65 @@ const BoersePage = () => {
     const timer = setInterval(() => setCurrentTick(Date.now()), 2000)
     return () => clearInterval(timer)
   }, [])
+
+  const {
+    data: botSessions,
+    isLoading: isSessionsLoading,
+    refetch: refetchSessions,
+  } = useQuery({
+    queryKey: ['bot-sessions'],
+    queryFn: () => listBotSessionsFn(),
+    refetchInterval: 5000,
+    enabled: true,
+  })
+
+  const startSessionMutation = useMutation({
+    mutationFn: startBotSessionFn,
+    onSuccess: (session) => {
+      toast.success(`Session ${session.name} started`)
+      setActiveSessionId(session.id)
+      void refetchSessions()
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to start session: ${error?.message ?? 'Unknown error'}`)
+    },
+  })
+
+  const stopSessionMutation = useMutation({
+    mutationFn: stopBotSessionFn,
+    onSuccess: (session) => {
+      toast.success(`Session ${session.name} stopped`)
+      if (session.id === activeSessionId) {
+        setActiveSessionId(null)
+      }
+      void refetchSessions()
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to stop session: ${error?.message ?? 'Unknown error'}`)
+    },
+  })
+
+  const handleStartSession = () => {
+    let parsedRules
+
+    try {
+      const parsed = JSON.parse(ruleJson)
+      parsedRules = Array.isArray(parsed) ? parsed : [parsed]
+    } catch (err) {
+      toast.error('Invalid JSON strategy definition')
+      return
+    }
+
+    void startSessionMutation.mutateAsync({
+      name: sessionLabel || `Session ${new Date().toLocaleTimeString()}`,
+      ownerId: null,
+      rules: parsedRules,
+    })
+  }
+
+  const handleStopSession = (sessionId: string) => {
+    void stopSessionMutation.mutateAsync({ sessionId })
+  }
 
   // Fetch all stocks for dropdown
   const { data: allStocks, isLoading: isLoadingStocks } = useQuery({
@@ -999,6 +1097,7 @@ const BoersePage = () => {
             maxBidQty={maxBidQty}
             maxAskQty={maxAskQty}
           />
+
         </div>
 
         {/* SEPARATOR */}

@@ -195,3 +195,13 @@ EXECUTE FUNCTION match_orders();
 -- INDEXES
 CREATE INDEX IF NOT EXISTS idx_orders_trader_status ON orders(trader_id, status);
 CREATE INDEX IF NOT EXISTS idx_orders_stock_status ON orders(stock_id, status, type, limit_price_cents);
+
+-- 4. VIEW: Last Minute Average Price (per stock)
+-- Used by bot strategies as the lastMinuteAverage fact.
+CREATE OR REPLACE VIEW last_minute_average_prices AS
+SELECT
+    stock_id,
+    round(avg(execution_price_cents))::bigint AS average_price_cents
+FROM trades
+WHERE executed_at >= now() - interval '1 minute'
+GROUP BY stock_id;

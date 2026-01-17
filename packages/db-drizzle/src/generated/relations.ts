@@ -1,5 +1,37 @@
 import { relations } from "drizzle-orm/relations";
-import { stocks, orders, traders, trades, portfolios } from "./schema";
+import { usersInAuth, strategies, traders, stocks, orders, trades, portfolios } from "./schema";
+
+export const strategiesRelations = relations(strategies, ({one, many}) => ({
+	usersInAuth: one(usersInAuth, {
+		fields: [strategies.user_id],
+		references: [usersInAuth.id]
+	}),
+	traders: many(traders),
+}));
+
+export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
+	strategies: many(strategies),
+	traders: many(traders),
+}));
+
+export const tradersRelations = relations(traders, ({one, many}) => ({
+	strategy: one(strategies, {
+		fields: [traders.strategy_id],
+		references: [strategies.id]
+	}),
+	usersInAuth: one(usersInAuth, {
+		fields: [traders.user_id],
+		references: [usersInAuth.id]
+	}),
+	orders: many(orders),
+	trades_buyer_id: many(trades, {
+		relationName: "trades_buyer_id_traders_id"
+	}),
+	trades_seller_id: many(trades, {
+		relationName: "trades_seller_id_traders_id"
+	}),
+	portfolios: many(portfolios),
+}));
 
 export const ordersRelations = relations(orders, ({one}) => ({
 	stock: one(stocks, {
@@ -15,17 +47,6 @@ export const ordersRelations = relations(orders, ({one}) => ({
 export const stocksRelations = relations(stocks, ({many}) => ({
 	orders: many(orders),
 	trades: many(trades),
-	portfolios: many(portfolios),
-}));
-
-export const tradersRelations = relations(traders, ({many}) => ({
-	orders: many(orders),
-	trades_buyer_id: many(trades, {
-		relationName: "trades_buyer_id_traders_id"
-	}),
-	trades_seller_id: many(trades, {
-		relationName: "trades_seller_id_traders_id"
-	}),
 	portfolios: many(portfolios),
 }));
 

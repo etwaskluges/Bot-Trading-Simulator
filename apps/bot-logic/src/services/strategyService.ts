@@ -1,75 +1,181 @@
-import type { BotStrategy, PriceContext } from "../types";
-import { PRICE_BUFFER_PERCENT } from "../config";
+import type { PriceContext } from "../types";
+import { Engine, RuleProperties } from "json-rules-engine";
 
-/**
- * Determines the trading action based on bot strategy and price context
- */
-export function determineAction(
-  strategy: BotStrategy,
-  priceContext: PriceContext
-): "BUY" | "SELL" | null {
-  const { isPriceUp, isPriceDown } = priceContext;
-
-  if (strategy === "momentum") {
-    if (isPriceUp) return "BUY";
-    if (isPriceDown) return "SELL";
-  } else if (strategy === "swing") {
-    if (isPriceUp) return "SELL";
-    if (isPriceDown) return "BUY";
-  } else {
-    // Random
-    return Math.random() > 0.5 ? "BUY" : "SELL";
-  }
-
-  return null;
+export interface StrategyFacts extends PriceContext {
+  hasPosition: boolean;
+  openOrders: number;
+  volatility: number;
+  availableBalance: number;
+  sharesOwned: number;
+  botId: string;
+  stockId: string;
+  priceChangePercent: number;
+  timestamp: number;
 }
 
-/**
- * Calculates the limit price for an order based on strategy and action
- */
-export function calculateLimitPrice(
-  strategy: BotStrategy,
-  action: "BUY" | "SELL",
-  currentPrice: number
-): number {
-  const priceBuffer = Math.floor(currentPrice * PRICE_BUFFER_PERCENT);
+export interface StrategyDecision {
+  type: "BUY" | "SELL" | "CANCEL";
+  params: Record<string, any>;
+}
 
-  if (strategy === "random") {
-    // Random Bots: Mixed Passive/Aggressive
-    // 50% chance to cross the spread (Aggressive) to trigger trades
-    const isAggressive = Math.random() > 0.5;
+export class StrategyEvaluator {
+  private readonly engine = new Engine();
 
-    if (action === "BUY") {
-      // Aggressive: Pay MORE (Current + Buffer)
-      // Passive: Pay LESS (Current - Buffer)
-      return isAggressive ? currentPrice + priceBuffer : currentPrice - priceBuffer;
+  constructor(public readonly rules: RuleProperties[]) {
+    for (const rule of rules || []) {
+      this.engine.addRule(rule);
     }
-    // Aggressive: Sell LOWER (Current - Buffer)
-    // Passive: Sell HIGHER (Current + Buffer)
-    return isAggressive ? currentPrice - priceBuffer : currentPrice + priceBuffer;
   }
 
-  // Standard Strategy (Momentum/Swing) - Usually Passive/Maker
-  if (action === "BUY") {
-    return currentPrice - priceBuffer; // Buy slightly lower
+  async evaluate(facts: StrategyFacts): Promise<StrategyDecision | null> {
+    const { events } = await this.engine.run(facts);
+
+    if (!events.length) return null;
+
+    const firstEvent = events[0];
+    const decisionType = firstEvent.type as StrategyDecision["type"];
+    return {
+      type: decisionType,
+      params: firstEvent.params || {},
+    };
   }
-  return currentPrice + priceBuffer; // Sell slightly higher
 }
 
-/**
- * Generates a random quantity for an order (1 to 5)
- */
-export function generateQuantity(): number {
-  return Math.floor(Math.random() * 5) + 1;
-}
+const ALLOWED_FACTS = new Set(["currentPrice", "previousPrice", "lastMinuteAverage"]);
+const ALLOWED_OPERATORS = new Set(["lessThan", "greaterThan", "equal"]);
+const ALLOWED_EVENTS = new Set(["BUY", "SELL", "CANCEL"]);
 
 /**
- * Normalizes strategy string to a valid BotStrategy type
+ * Converts an incoming rule definition (JSON string or already parsed object)
+ * into a canonical list of RuleProperties. Falls back to the default rules if
+ * the payload is missing/invalid.
  */
-export function normalizeStrategy(strategy?: string | null): BotStrategy {
-  const normalized = (strategy || "random").toLowerCase();
-  if (normalized === "momentum" || normalized === "swing") {
-    return normalized;
+export function parseRuleSet(
+  input?: string | RuleProperties[] | unknown,
+  options: { fallbackToDefault?: boolean } = {}
+): RuleProperties[] {
+  const { fallbackToDefault = false } = options;
+  if (!input) return fallbackToDefault ? [] : [];
+
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (!parsed) return fallbackToDefault ? [] : [];
+      const normalized = normalizeRuleSet(Array.isArray(parsed) ? parsed : [parsed]);
+      return normalized.length > 0 ? normalized : fallbackToDefault ? [] : [];
+    } catch (error) {
+      throw new Error("Invalid JSON rule definition");
+    }
   }
-  return "random";
+
+  if (Array.isArray(input)) {
+    const normalized = normalizeRuleSet(input);
+    return normalized.length > 0 ? normalized : fallbackToDefault ? [] : [];
+  }
+
+  const normalized = normalizeRuleSet([input]);
+  return normalized.length > 0 ? normalized : fallbackToDefault ? [] : [];
+}
+
+function normalizeRuleSet(rawRules: unknown[]): RuleProperties[] {
+  const normalized: RuleProperties[] = [];
+  for (const rawRule of rawRules) {
+    const rule = normalizeRule(rawRule);
+    if (rule) normalized.push(rule);
+  }
+  return normalized;
+}
+
+function normalizeRule(rawRule: unknown): RuleProperties | null {
+  if (!rawRule || typeof rawRule !== "object") return null;
+  const rule = rawRule as Record<string, any>;
+  const conditions = normalizeConditions(rule.conditions);
+  const event = normalizeEvent(rule.event);
+
+  if (!conditions || !event) return null;
+
+  const priority =
+    typeof rule.priority === "number" && Number.isFinite(rule.priority) ? rule.priority : 1;
+
+  return {
+    priority,
+    conditions,
+    event,
+  };
+}
+
+function normalizeConditions(rawConditions: unknown): RuleProperties["conditions"] | null {
+  if (!rawConditions || typeof rawConditions !== "object") return null;
+  const conditions = rawConditions as Record<string, any>;
+  const hasAll = Array.isArray(conditions.all);
+  const hasAny = Array.isArray(conditions.any);
+  const source = hasAll ? conditions.all : hasAny ? conditions.any : null;
+
+  if (!source) return null;
+
+  const normalized = source
+    .map((condition: unknown) => normalizeCondition(condition))
+    .filter(Boolean) as RuleProperties["conditions"]["all"];
+
+  if (normalized.length === 0) return null;
+
+  return hasAll ? { all: normalized } : { any: normalized };
+}
+
+function normalizeCondition(rawCondition: unknown): RuleProperties["conditions"]["all"][number] | null {
+  if (!rawCondition || typeof rawCondition !== "object") return null;
+  const condition = rawCondition as Record<string, any>;
+  const fact = typeof condition.fact === "string" ? condition.fact : null;
+  const operator = typeof condition.operator === "string" ? condition.operator : null;
+
+  if (!fact || !ALLOWED_FACTS.has(fact)) return null;
+  if (!operator || !ALLOWED_OPERATORS.has(operator)) return null;
+
+  const value = normalizeValue(condition.value);
+  if (value === undefined) return null;
+
+  return {
+    fact,
+    operator,
+    value,
+  };
+}
+
+function normalizeValue(rawValue: unknown): unknown | undefined {
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === "string") {
+    if (ALLOWED_FACTS.has(rawValue)) {
+      return { fact: rawValue };
+    }
+    const asNumber = Number(rawValue);
+    if (Number.isFinite(asNumber)) {
+      return asNumber;
+    }
+    return undefined;
+  }
+
+  if (rawValue && typeof rawValue === "object") {
+    const maybeFact = (rawValue as { fact?: unknown }).fact;
+    if (typeof maybeFact === "string" && ALLOWED_FACTS.has(maybeFact)) {
+      return { fact: maybeFact };
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeEvent(rawEvent: unknown): RuleProperties["event"] | null {
+  if (!rawEvent || typeof rawEvent !== "object") return null;
+  const event = rawEvent as Record<string, any>;
+  const type = typeof event.type === "string" ? event.type : null;
+  if (!type || !ALLOWED_EVENTS.has(type)) return null;
+
+  const params = event.params && typeof event.params === "object" ? event.params : undefined;
+  return {
+    type,
+    params,
+  };
 }

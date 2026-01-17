@@ -1,29 +1,21 @@
 import "dotenv/config";
-import { tick } from "./bot-engine";
-import { TICK_RATE_MS, MIN_REST_DELAY_MS } from "./config";
+import { startServer } from "./server";
+import { sessionManager } from "./session/sessionManager";
 
-/**
- * Main bot loop - continuously executes ticks with error handling
- */
-async function startBots(): Promise<void> {
-  console.log("🤖 Initializing Bot Army (Resilient Loop)...");
+const AUTO_START_SESSION = process.env.BOT_LOGIC_AUTO_START !== "false";
 
-  while (true) {
-    const startTime = Date.now();
-    try {
-      await tick();
-    } catch (e) {
-      console.error("⚠️ Tick Error:", e);
-    }
+async function bootstrap(): Promise<void> {
+  await startServer();
 
-    const elapsed = Date.now() - startTime;
-    const delay = Math.max(MIN_REST_DELAY_MS, TICK_RATE_MS - elapsed);
-    await new Promise((resolve) => setTimeout(resolve, delay));
+  if (AUTO_START_SESSION) {
+    const session = sessionManager.createSession({
+      name: "Default CLI session",
+    });
+    console.log("🤖 Default bot session started", session.id);
   }
 }
 
-// Start the engine
-startBots().catch((e) => {
-  console.error("Fatal Bot Error:", e);
+bootstrap().catch((error) => {
+  console.error("Fatal Bot Error:", error);
   process.exit(1);
 });

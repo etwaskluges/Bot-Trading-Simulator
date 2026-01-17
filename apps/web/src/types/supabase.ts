@@ -139,24 +139,54 @@ export type Database = {
         }
         Relationships: []
       }
+      strategies: {
+        Row: {
+          id: string
+          name: string
+          rules: Json
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          rules: Json
+          user_id: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          rules?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       traders: {
         Row: {
           balance_cents: number
           id: string
           is_bot: boolean
           name: string
+          strategy: string | null
+          strategy_id: string
+          user_id: string
         }
         Insert: {
           balance_cents?: number
           id?: string
           is_bot?: boolean
           name: string
+          strategy?: string | null
+          strategy_id: string
+          user_id: string
         }
         Update: {
           balance_cents?: number
           id?: string
           is_bot?: boolean
           name?: string
+          strategy?: string | null
+          strategy_id?: string
+          user_id?: string
         }
         Relationships: []
       }

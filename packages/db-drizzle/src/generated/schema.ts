@@ -1,7 +1,28 @@
-import { pgTable, check, uuid, text, boolean, bigint, unique, integer, index, foreignKey, timestamp, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, uuid, text, jsonb, check, boolean, bigint, unique, integer, index, timestamp, primaryKey, pgView } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
+import { usersInAuth } from "../schema/auth"
+
+export { usersInAuth }
+
+const users = usersInAuth
 
 
+
+
+export const strategies = pgTable("strategies", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	user_id: uuid().notNull(),
+	name: text().notNull(),
+	rules: jsonb().notNull(),
+}, (table) => {
+	return {
+		strategies_user_id_fkey: foreignKey({
+			columns: [table.user_id],
+			foreignColumns: [users.id],
+			name: "strategies_user_id_fkey"
+		}).onDelete("cascade"),
+	}
+});
 
 export const traders = pgTable("traders", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -10,8 +31,20 @@ export const traders = pgTable("traders", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	balance_cents: bigint({ mode: "number" }).default(0).notNull(),
 	strategy: text(),
+	strategy_id: uuid().notNull(),
+	user_id: uuid().notNull(),
 }, (table) => {
 	return {
+		traders_strategy_id_fkey: foreignKey({
+			columns: [table.strategy_id],
+			foreignColumns: [strategies.id],
+			name: "traders_strategy_id_fkey"
+		}).onDelete("cascade"),
+		traders_user_id_fkey: foreignKey({
+			columns: [table.user_id],
+			foreignColumns: [users.id],
+			name: "traders_user_id_fkey"
+		}).onDelete("cascade"),
 		traders_balance_cents_check: check("traders_balance_cents_check", sql`balance_cents >= 0`),
 	}
 });
@@ -107,3 +140,7 @@ export const portfolios = pgTable("portfolios", {
 		portfolios_shares_owned_check: check("portfolios_shares_owned_check", sql`shares_owned >= 0`),
 	}
 });
+export const last_minute_average_prices = pgView("last_minute_average_prices", {	stock_id: uuid(),
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	average_price_cents: bigint({ mode: "number" }),
+}).as(sql`SELECT trades.stock_id, round(avg(trades.execution_price_cents))::bigint AS average_price_cents FROM trades WHERE trades.executed_at >= (now() - '00:01:00'::interval) GROUP BY trades.stock_id`);

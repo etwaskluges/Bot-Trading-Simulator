@@ -9,13 +9,23 @@ CREATE TABLE stocks (
     total_shares INTEGER NOT NULL DEFAULT 0
 );
 
+-- 2. Strategies
+CREATE TABLE strategies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    rules JSONB NOT NULL
+);
+
 -- 2. TRADERS
 CREATE TABLE traders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     is_bot BOOLEAN NOT NULL DEFAULT false,
     balance_cents BIGINT NOT NULL DEFAULT 0 CHECK (balance_cents >= 0),
-    strategy TEXT
+    strategy TEXT,
+    strategy_id UUID NOT NULL REFERENCES strategies ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
 -- 3. PORTFOLIOS

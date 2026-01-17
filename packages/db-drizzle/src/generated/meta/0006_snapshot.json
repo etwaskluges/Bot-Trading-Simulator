@@ -1,0 +1,553 @@
+{
+  "id": "7c1e6800-4526-41c9-9546-c591c8343821",
+  "prevId": "ccaea44b-093c-4545-9044-a6af1f79f610",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "stock_id": {
+          "name": "stock_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trader_id": {
+          "name": "trader_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "limit_price_cents": {
+          "name": "limit_price_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OPEN'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_orders_stock_status": {
+          "name": "idx_orders_stock_status",
+          "columns": [
+            {
+              "expression": "stock_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int8_ops"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int8_ops"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            },
+            {
+              "expression": "limit_price_cents",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_orders_trader_status": {
+          "name": "idx_orders_trader_status",
+          "columns": [
+            {
+              "expression": "trader_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "orders_stock_id_fkey": {
+          "name": "orders_stock_id_fkey",
+          "tableFrom": "orders",
+          "tableTo": "stocks",
+          "columnsFrom": [
+            "stock_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "orders_trader_id_fkey": {
+          "name": "orders_trader_id_fkey",
+          "tableFrom": "orders",
+          "tableTo": "traders",
+          "columnsFrom": [
+            "trader_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "orders_type_check": {
+          "name": "orders_type_check",
+          "value": "type = ANY (ARRAY['BUY'::text, 'SELL'::text])"
+        },
+        "orders_status_check": {
+          "name": "orders_status_check",
+          "value": "status = ANY (ARRAY['OPEN'::text, 'FILLED'::text, 'CANCELLED'::text])"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.portfolios": {
+      "name": "portfolios",
+      "schema": "",
+      "columns": {
+        "trader_id": {
+          "name": "trader_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stock_id": {
+          "name": "stock_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shares_owned": {
+          "name": "shares_owned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "portfolios_trader_id_fkey": {
+          "name": "portfolios_trader_id_fkey",
+          "tableFrom": "portfolios",
+          "tableTo": "traders",
+          "columnsFrom": [
+            "trader_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "portfolios_stock_id_fkey": {
+          "name": "portfolios_stock_id_fkey",
+          "tableFrom": "portfolios",
+          "tableTo": "stocks",
+          "columnsFrom": [
+            "stock_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "portfolios_pkey": {
+          "name": "portfolios_pkey",
+          "columns": [
+            "trader_id",
+            "stock_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "portfolios_shares_owned_check": {
+          "name": "portfolios_shares_owned_check",
+          "value": "shares_owned >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.stocks": {
+      "name": "stocks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_price_cents": {
+          "name": "current_price_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_shares": {
+          "name": "total_shares",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "stocks_symbol_key": {
+          "name": "stocks_symbol_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "symbol"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.strategies": {
+      "name": "strategies",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bot_id": {
+          "name": "bot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rules": {
+          "name": "rules",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "strategies_user_id_fkey": {
+          "name": "strategies_user_id_fkey",
+          "tableFrom": "strategies",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "strategies_bot_id_fkey": {
+          "name": "strategies_bot_id_fkey",
+          "tableFrom": "strategies",
+          "tableTo": "traders",
+          "columnsFrom": [
+            "bot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.traders": {
+      "name": "traders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_bot": {
+          "name": "is_bot",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "balance_cents": {
+          "name": "balance_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "strategy": {
+          "name": "strategy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strategy_id": {
+          "name": "strategy_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "traders_user_id_fkey": {
+          "name": "traders_user_id_fkey",
+          "tableFrom": "traders",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "traders_balance_cents_check": {
+          "name": "traders_balance_cents_check",
+          "value": "balance_cents >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.trades": {
+      "name": "trades",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "stock_id": {
+          "name": "stock_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "buyer_id": {
+          "name": "buyer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seller_id": {
+          "name": "seller_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "execution_price_cents": {
+          "name": "execution_price_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "executed_at": {
+          "name": "executed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "trades_stock_id_fkey": {
+          "name": "trades_stock_id_fkey",
+          "tableFrom": "trades",
+          "tableTo": "stocks",
+          "columnsFrom": [
+            "stock_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "trades_buyer_id_fkey": {
+          "name": "trades_buyer_id_fkey",
+          "tableFrom": "trades",
+          "tableTo": "traders",
+          "columnsFrom": [
+            "buyer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trades_seller_id_fkey": {
+          "name": "trades_seller_id_fkey",
+          "tableFrom": "trades",
+          "tableTo": "traders",
+          "columnsFrom": [
+            "seller_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
