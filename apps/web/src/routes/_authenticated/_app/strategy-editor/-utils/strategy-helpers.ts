@@ -227,7 +227,8 @@ type RawConditionNode = {
 }
 
 function isRuleCondition(node: RawConditionNode): boolean {
-  return typeof node.fact === 'string' && typeof node.operator === 'string' && 'value' in node
+  return typeof node.fact === 'string' && typeof node.operator === 'string' &&
+         ('value' in node || 'valueMin' in node || 'valueMax' in node || 'randomProbability' in node)
 }
 
 function toRuleCondition(node: RawConditionNode): RuleCondition {
