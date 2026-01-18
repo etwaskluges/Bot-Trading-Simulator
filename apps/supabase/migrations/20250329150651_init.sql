@@ -24,7 +24,7 @@ CREATE TABLE traders (
     is_bot BOOLEAN NOT NULL DEFAULT false,
     balance_cents BIGINT NOT NULL DEFAULT 0 CHECK (balance_cents >= 0),
     strategy TEXT,
-    strategy_id UUID NOT NULL REFERENCES strategies ON DELETE CASCADE,
+    strategy_id UUID NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );
 

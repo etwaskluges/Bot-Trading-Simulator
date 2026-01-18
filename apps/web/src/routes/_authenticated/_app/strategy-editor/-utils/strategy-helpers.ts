@@ -154,9 +154,25 @@ export function validateRules(group: RuleGroup): string[] {
 
   for (const child of group.children) {
     if (child.type === 'rule') {
-      if (!child.fact || !child.operator || child.value === '') {
-        issues.push('Every rule must have a fact, operator, and value.')
-        break
+      if (!child.fact || !child.operator) {
+        issues.push('Every rule must have a fact and operator.')
+        continue
+      }
+      
+      // Validate based on operator type
+      if (child.operator === 'between' || child.operator === 'notBetween') {
+        if (child.valueMin === undefined || child.valueMax === undefined) {
+          issues.push(`Range operator "${child.operator}" requires both min and max values.`)
+        }
+      } else if (child.operator === 'randomChance') {
+        if (child.randomProbability === undefined || child.randomProbability < 0 || child.randomProbability > 100) {
+          issues.push('Random chance operator requires a probability between 0 and 100.')
+        }
+      } else {
+        // Standard operators need a value
+        if (child.value === '') {
+          issues.push('Every rule must have a value.')
+        }
       }
     } else {
       issues.push(...validateRules(child))
@@ -169,11 +185,22 @@ export function validateRules(group: RuleGroup): string[] {
 export function toRulesEngineConditions(group: RuleGroup): Record<string, unknown> {
   const conditions = group.children.map((child) => {
     if (child.type === 'rule') {
-      return {
+      const condition: Record<string, unknown> = {
         fact: child.fact,
         operator: child.operator,
-        value: child.value,
       }
+      
+      // Handle different operator types
+      if (child.operator === 'between' || child.operator === 'notBetween') {
+        condition.valueMin = child.valueMin
+        condition.valueMax = child.valueMax
+      } else if (child.operator === 'randomChance') {
+        condition.randomProbability = child.randomProbability
+      } else {
+        condition.value = child.value
+      }
+      
+      return condition
     }
     return toRulesEngineConditions(child)
   })
@@ -191,6 +218,9 @@ type RawConditionNode = {
   fact?: unknown
   operator?: unknown
   value?: unknown
+  valueMin?: unknown
+  valueMax?: unknown
+  randomProbability?: unknown
   all?: unknown
   any?: unknown
   not?: unknown
@@ -204,16 +234,29 @@ function toRuleCondition(node: RawConditionNode): RuleCondition {
   const fact = typeof node.fact === 'string' ? (node.fact as RuleFact) : ''
   const operator =
     typeof node.operator === 'string' ? (node.operator as RuleOperator) : ''
-  const value =
-    typeof node.value === 'number' || typeof node.value === 'string'
-      ? (node.value as MetricValueSource | number)
-      : ''
-
-  return createRuleCondition({
+  
+  const condition: Partial<RuleCondition> = {
     fact,
     operator,
-    value: VALUE_SOURCES.includes(value as MetricValueSource) ? value : value,
-  })
+  }
+  
+  // Handle different operator types
+  if (operator === 'between' || operator === 'notBetween') {
+    condition.valueMin = typeof node.valueMin === 'number' ? node.valueMin : undefined
+    condition.valueMax = typeof node.valueMax === 'number' ? node.valueMax : undefined
+    condition.value = ''
+  } else if (operator === 'randomChance') {
+    condition.randomProbability = typeof node.randomProbability === 'number' ? node.randomProbability : undefined
+    condition.value = ''
+  } else {
+    const value =
+      typeof node.value === 'number' || typeof node.value === 'string'
+        ? (node.value as MetricValueSource | number)
+        : ''
+    condition.value = VALUE_SOURCES.includes(value as MetricValueSource) ? value : value
+  }
+
+  return createRuleCondition(condition)
 }
 
 function toRuleGroup(

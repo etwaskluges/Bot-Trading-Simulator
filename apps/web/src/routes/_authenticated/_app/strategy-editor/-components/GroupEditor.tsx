@@ -16,6 +16,7 @@ interface GroupEditorProps {
   group: RuleGroup
   depth: number
   isRoot?: boolean
+  actionType?: 'BUY' | 'SELL' | 'CANCEL'
   onAddRule: (groupId: string) => void
   onAddGroup: (groupId: string) => void
   onRemove: (nodeId: string) => void
@@ -27,6 +28,7 @@ export function GroupEditor({
   group,
   depth,
   isRoot = false,
+  actionType,
   onAddRule,
   onAddGroup,
   onRemove,
@@ -99,6 +101,7 @@ export function GroupEditor({
               key={child.id}
               node={child}
               depth={depth + 1}
+              actionType={actionType}
               onAddRule={onAddRule}
               onAddGroup={onAddGroup}
               onRemove={onRemove}
@@ -145,6 +148,7 @@ export function GroupEditor({
 function SortableNode(props: {
   node: RuleNode
   depth: number
+  actionType?: 'BUY' | 'SELL' | 'CANCEL'
   onAddRule: (groupId: string) => void
   onAddGroup: (groupId: string) => void
   onRemove: (nodeId: string) => void
@@ -157,6 +161,7 @@ function SortableNode(props: {
         rule={props.node}
         onRemove={() => props.onRemove(props.node.id)}
         onUpdate={props.onUpdateRule}
+        actionType={props.actionType}
       />
     )
   }
@@ -166,6 +171,7 @@ function SortableNode(props: {
       <GroupEditor
         group={props.node}
         depth={props.depth}
+        actionType={props.actionType}
         onAddRule={props.onAddRule}
         onAddGroup={props.onAddGroup}
         onRemove={props.onRemove}

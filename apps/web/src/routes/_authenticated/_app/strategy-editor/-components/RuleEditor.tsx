@@ -164,6 +164,7 @@ function RuleCard({
           group={rule.conditions}
           depth={0}
           isRoot
+          actionType={rule.actionType}
           onAddRule={(groupId) =>
             onUpdateConditions(rule.id,
               appendNode(rule.conditions, groupId, createRuleCondition())
@@ -192,5 +193,6 @@ function RuleCard({
 const LIMIT_PRICE_OPTIONS: Array<{ value: LimitPriceType; label: string }> = [
   { value: 'market', label: 'Market' },
   { value: 'offsetPct', label: 'Offset %' },
+  { value: 'offsetAbsolute', label: 'Offset Cents' },
   { value: 'absoluteCents', label: 'Absolute Cents' },
 ]

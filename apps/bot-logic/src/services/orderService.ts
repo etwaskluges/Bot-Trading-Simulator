@@ -86,6 +86,9 @@ export async function createOrderIfValid(
       ? (currentPrice - priceContext.previousPrice) / priceContext.previousPrice
       : 0;
 
+  // Add randomChance fact (0-100) for random operators
+  const randomChance = Math.random() * 100;
+
   const facts: StrategyFacts = {
     currentPrice,
     previousPrice: priceContext.previousPrice,
@@ -101,10 +104,56 @@ export async function createOrderIfValid(
     stockId,
     priceChangePercent,
     timestamp: Date.now(),
+    randomChance,
   };
 
   if (!strategyEvaluator) return;
 
+  // For CANCEL actions, evaluate per-order if orders exist
+  if (stockOrders.length > 0) {
+    // Check if this might be a CANCEL strategy by evaluating with a dummy order
+    const dummyOrderPrice = currentPrice;
+    const cancelCheckFacts: StrategyFacts = {
+      ...facts,
+      orderPrice: dummyOrderPrice,
+      orderAge: 0,
+      orderDeviation: 0,
+    };
+    const cancelCheck = await strategyEvaluator.evaluate(cancelCheckFacts);
+    
+    // If CANCEL is triggered, evaluate each order individually
+    if (cancelCheck && cancelCheck.type === "CANCEL") {
+      for (const order of stockOrders) {
+        if (ordersToCancelIds.includes(order.id)) continue;
+        
+        const orderPrice = Number(order.limit_price_cents);
+        const orderDeviation = Math.abs(orderPrice - currentPrice) / currentPrice * 100;
+        // For now, assume orderAge is 0 (created in current tick)
+        // TODO: Track order creation time for accurate orderAge
+        const orderAge = 0;
+        
+        const cancelFacts: StrategyFacts = {
+          ...facts,
+          orderPrice,
+          orderAge,
+          orderDeviation,
+        };
+        
+        const cancelDecision = await strategyEvaluator.evaluate(cancelFacts);
+        if (cancelDecision && cancelDecision.type === "CANCEL") {
+          ordersToCancelIds.push(order.id);
+          if (order.type === "BUY") {
+            const currentBal = botAvailableBalance.get(bot.id) || 0;
+            const refund = orderPrice * order.quantity;
+            botAvailableBalance.set(bot.id, currentBal + refund);
+          }
+        }
+      }
+      return;
+    }
+  }
+
+  // For BUY/SELL actions, evaluate normally
   const decision = await strategyEvaluator.evaluate(facts);
   if (!decision) return;
 
@@ -114,6 +163,7 @@ export async function createOrderIfValid(
   );
 
   if (decision.type === "CANCEL") {
+    // Fallback: if CANCEL is triggered without order-specific facts, cancel all orders
     for (const order of stockOrders) {
       if (ordersToCancelIds.includes(order.id)) continue;
       ordersToCancelIds.push(order.id);
@@ -195,6 +245,10 @@ export function calculateLimitPrice({
 
   if (paramType === "absoluteCents" && Number.isFinite(paramValue)) {
     return Math.max(1, Math.floor(paramValue));
+  }
+
+  if (paramType === "offsetAbsolute" && Number.isFinite(paramValue)) {
+    return Math.max(1, Math.floor(currentPrice + paramValue));
   }
 
   if (paramType === "offsetPct" && Number.isFinite(paramValue)) {

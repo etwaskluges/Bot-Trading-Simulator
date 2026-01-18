@@ -8,6 +8,7 @@ import {
 } from "./services/dataService";
 import { determineOrdersToCancell, createOrderIfValid } from "./services/orderService";
 import { StrategyEvaluator, parseRuleSet } from "./services/strategyService";
+import { sessionManager } from "./session/sessionManager";
 
 export interface BotTickContext {
   sessionId: string;
@@ -26,6 +27,7 @@ export async function tick(context: BotTickContext): Promise<void> {
 
   const shouldFilterByOwner = ownerId && isUuid(ownerId);
   if (shouldFilterByOwner) {
+    // Owner-specific session: only run this owner's bots
     const allowedBots = marketData.bots.filter((bot) => bot.user_id === ownerId);
     const allowedBotIds = new Set(allowedBots.map((bot) => bot.id));
     marketData.bots = allowedBots;
@@ -37,6 +39,26 @@ export async function tick(context: BotTickContext): Promise<void> {
     );
     marketData.strategies = marketData.strategies.filter((strategy) =>
       allowedBots.some((bot) => bot.strategy_id === strategy.id)
+    );
+  } else {
+    // Default session: only run bots for owners who have active sessions
+    const activeOwnerIds = new Set(
+      sessionManager.listSessions()
+        .filter(session => session.ownerId && session.status === 'running')
+        .map(session => session.ownerId)
+    );
+
+    // Only run bots if their owner has an active session
+    marketData.bots = marketData.bots.filter((bot) => activeOwnerIds.has(bot.user_id));
+    const allowedBotIds = new Set(marketData.bots.map((bot) => bot.id));
+    marketData.allOpenOrders = marketData.allOpenOrders.filter((order) =>
+      allowedBotIds.has(order.trader_id)
+    );
+    marketData.allPortfolios = marketData.allPortfolios.filter((portfolio) =>
+      allowedBotIds.has(portfolio.trader_id)
+    );
+    marketData.strategies = marketData.strategies.filter((strategy) =>
+      marketData.bots.some((bot) => bot.strategy_id === strategy.id)
     );
   }
 

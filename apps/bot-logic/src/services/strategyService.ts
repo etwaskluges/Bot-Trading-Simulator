@@ -11,6 +11,13 @@ export interface StrategyFacts extends PriceContext {
   stockId: string;
   priceChangePercent: number;
   timestamp: number;
+  // Order-specific facts for CANCEL strategies
+  orderPrice?: number;
+  orderAge?: number;
+  orderDeviation?: number;
+  volume?: number;
+  // Random chance fact (0-100) for randomChance operator
+  randomChance?: number;
 }
 
 export interface StrategyDecision {
@@ -22,6 +29,15 @@ export class StrategyEvaluator {
   private readonly engine = new Engine();
 
   constructor(public readonly rules: RuleProperties[]) {
+    // Register custom operators
+    this.engine.addOperator('between', (factValue: number, jsonValue: { min: number; max: number }) => {
+      return factValue >= jsonValue.min && factValue <= jsonValue.max;
+    });
+    
+    this.engine.addOperator('notBetween', (factValue: number, jsonValue: { min: number; max: number }) => {
+      return factValue < jsonValue.min || factValue > jsonValue.max;
+    });
+
     for (const rule of rules || []) {
       this.engine.addRule(rule);
     }
@@ -41,8 +57,23 @@ export class StrategyEvaluator {
   }
 }
 
-const ALLOWED_FACTS = new Set(["currentPrice", "previousPrice", "lastMinuteAverage"]);
-const ALLOWED_OPERATORS = new Set(["lessThan", "greaterThan", "equal"]);
+const ALLOWED_FACTS = new Set([
+  "currentPrice", 
+  "previousPrice", 
+  "lastMinuteAverage",
+  "volume",
+  "orderPrice",
+  "orderAge",
+  "orderDeviation"
+]);
+const ALLOWED_OPERATORS = new Set([
+  "lessThan", 
+  "greaterThan", 
+  "equal",
+  "between",
+  "notBetween",
+  "randomChance"
+]);
 const ALLOWED_EVENTS = new Set(["BUY", "SELL", "CANCEL"]);
 
 /**
@@ -131,6 +162,35 @@ function normalizeCondition(rawCondition: unknown): RuleProperties["conditions"]
   if (!fact || !ALLOWED_FACTS.has(fact)) return null;
   if (!operator || !ALLOWED_OPERATORS.has(operator)) return null;
 
+  // Handle range operators
+  if (operator === "between" || operator === "notBetween") {
+    const valueMin = typeof condition.valueMin === "number" ? condition.valueMin : undefined;
+    const valueMax = typeof condition.valueMax === "number" ? condition.valueMax : undefined;
+    if (valueMin === undefined || valueMax === undefined) return null;
+    
+    return {
+      fact,
+      operator,
+      value: { min: valueMin, max: valueMax },
+    } as any;
+  }
+
+  // Handle random chance operator
+  if (operator === "randomChance") {
+    const probability = typeof condition.randomProbability === "number" 
+      ? condition.randomProbability 
+      : undefined;
+    if (probability === undefined || probability < 0 || probability > 100) return null;
+    
+    // Use randomChance fact with lessThan operator
+    return {
+      fact: "randomChance",
+      operator: "lessThan",
+      value: probability,
+    };
+  }
+
+  // Standard operators
   const value = normalizeValue(condition.value);
   if (value === undefined) return null;
 
