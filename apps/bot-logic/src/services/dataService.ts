@@ -57,7 +57,16 @@ export async function fetchMarketData(): Promise<MarketData> {
 
   // Fetch Open Orders for ALL bots in one go
   const allOpenOrders = await postgres_db
-    .select()
+    .select({
+      id: schema.orders.id,
+      stock_id: schema.orders.stock_id,
+      trader_id: schema.orders.trader_id,
+      type: schema.orders.type,
+      limit_price_cents: schema.orders.limit_price_cents,
+      quantity: schema.orders.quantity,
+      status: schema.orders.status,
+      created_at: schema.orders.created_at,
+    })
     .from(schema.orders)
     .where(and(inArray(schema.orders.trader_id, botIds), eq(schema.orders.status, "OPEN")));
 

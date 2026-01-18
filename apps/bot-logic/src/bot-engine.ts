@@ -132,8 +132,11 @@ export async function tick(context: BotTickContext): Promise<void> {
           bot.id
         );
 
+        // Only skip createOrderIfValid for random/momentum strategies that still have orders
+        // Custom strategies handle cancellation in createOrderIfValid
+        const hasCustomStrategy = !!evaluatorForBot;
         const keepingOrder = stockOrders.find((o) => !ordersToCancelIds.includes(o.id));
-        if (keepingOrder) continue;
+        if (keepingOrder && !hasCustomStrategy) continue;
       }
 
       await createOrderIfValid(

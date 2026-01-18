@@ -58,13 +58,25 @@ export class StrategyEvaluator {
 }
 
 const ALLOWED_FACTS = new Set([
-  "currentPrice", 
-  "previousPrice", 
+  "currentPrice",
+  "previousPrice",
   "lastMinuteAverage",
-  "volume",
+  "isPriceUp",
+  "isPriceDown",
+  "hasPosition",
+  "openOrders",
+  "volatility",
+  "availableBalance",
+  "sharesOwned",
+  "botId",
+  "stockId",
+  "priceChangePercent",
+  "timestamp",
   "orderPrice",
   "orderAge",
-  "orderDeviation"
+  "orderDeviation",
+  "volume",
+  "randomChance"
 ]);
 const ALLOWED_OPERATORS = new Set([
   "lessThan", 

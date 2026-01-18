@@ -26,6 +26,7 @@ export interface OrderData {
   limit_price_cents: string | number;
   quantity: number;
   status: string;
+  created_at: string;
 }
 
 export interface PortfolioData {
