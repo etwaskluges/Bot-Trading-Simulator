@@ -5,11 +5,13 @@ import { SiteHeader } from '~/lib/components/ui/site-header'
 import { Toaster } from '~/lib/components/ui/sonner'
 
 const Layout = () => {
+  const { user } = Route.useRouteContext()
+
   return (
     <SidebarProvider>
       <Toaster position="top-right" />
 
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="inset" user={user} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
@@ -23,5 +25,10 @@ const Layout = () => {
 }
 
 export const Route = createFileRoute('/_authenticated/_app')({
+  beforeLoad: ({ context }) => {
+    return {
+      user: context.user,
+    }
+  },
   component: Layout,
 })

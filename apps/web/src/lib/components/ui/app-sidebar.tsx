@@ -45,6 +45,7 @@ interface NavigationItem {
 interface AppSidebarProps {
   variant?: 'inset' | 'sidebar' | 'floating'
   navigationItems?: NavigationItem[]
+  user?: any
 }
 
 const data = {
@@ -166,8 +167,21 @@ const data = {
   // ],
 }
 
-export function AppSidebar({ variant = 'inset' }: AppSidebarProps) {
+export function AppSidebar({ variant = 'inset', user }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar()
+
+  console.log('AppSidebar user:', user)
+
+  // Filter navigation items based on user role
+  const filteredNavMain = data.navMain.filter(item => {
+    // Hide Seeding Area for non-moderator users
+    if (item.title === 'Seeding Area') {
+      const isModerator = user?.role === 'moderator'
+      console.log('Seeding Area visibility:', isModerator, 'user role:', user?.role)
+      return isModerator
+    }
+    return true
+  })
 
   return (
     <Sidebar variant={variant}>
@@ -196,7 +210,7 @@ export function AppSidebar({ variant = 'inset' }: AppSidebarProps) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavMain} />
         {/* <NavDocuments items={data.documents} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>

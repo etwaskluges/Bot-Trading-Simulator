@@ -1,11 +1,42 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { TrendingUp, Zap, ArrowRight, LayoutDashboard, Database } from 'lucide-react'
+import { createServerFn } from '@tanstack/react-start'
+import { TrendingUp, Zap, ArrowRight, LayoutDashboard, Database, Shield } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+
+import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
+
+// Server function to update user role to moderator
+const updateUserRoleToModerator = createServerFn()
+  .handler(async () => {
+    const supabase = getSupabaseServerClient()
+
+    // Call the RPC function to update user role
+    const { error } = await supabase.rpc('update_user_role_to_moderator')
+
+    if (error) {
+      throw new Error(`Failed to update user role: ${error.message}`)
+    }
+
+    return { success: true }
+  })
 
 export const Route = createFileRoute('/_authenticated/_app/home/')({
   component: LandingPage,
 })
 
 function LandingPage() {
+  // Mutation to update user role
+  const updateRoleMutation = useMutation({
+    mutationFn: () => updateUserRoleToModerator(),
+    onSuccess: () => {
+      toast.success('Role updated to moderator! Refresh the page to see changes.')
+    },
+    onError: (error) => {
+      toast.error(`Failed to update role: ${error.message}`)
+    },
+  })
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center p-6">
       <div className="max-w-4xl w-full space-y-12">
@@ -72,6 +103,27 @@ function LandingPage() {
               </div>
             </div>
           </Link>
+        </div>
+
+        {/* Test Button */}
+        <div className="flex justify-center pt-8">
+          <button
+            onClick={() => updateRoleMutation.mutate()}
+            disabled={updateRoleMutation.isPending}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-bold rounded-full transition-colors duration-200 shadow-lg hover:shadow-xl"
+          >
+            {updateRoleMutation.isPending ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <Shield size={18} />
+                Make Me Moderator
+              </>
+            )}
+          </button>
         </div>
 
         {/* Footer info */}

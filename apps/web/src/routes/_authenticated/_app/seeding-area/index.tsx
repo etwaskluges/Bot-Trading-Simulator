@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import {
   CheckCircle2,
@@ -283,5 +283,19 @@ function SeedPage() {
 }
 
 export const Route = createFileRoute('/_authenticated/_app/seeding-area/')({
+  beforeLoad: async ({ context }) => {
+    const { user } = context
+
+    if (!user || user.role !== 'moderator') {
+      throw redirect({
+        to: '/home',
+        search: {},
+      })
+    }
+
+    return {
+      user,
+    }
+  },
   component: SeedPage,
 })

@@ -74,8 +74,8 @@ export const orders = pgTable("orders", {
 	created_at: timestamp({ withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => {
 	return {
-		idx_orders_stock_status: index("idx_orders_stock_status").using("btree", table.stock_id.asc().nullsLast().op("text_ops"), table.status.asc().nullsLast().op("int8_ops"), table.type.asc().nullsLast().op("uuid_ops"), table.limit_price_cents.asc().nullsLast().op("uuid_ops")),
-		idx_orders_trader_status: index("idx_orders_trader_status").using("btree", table.trader_id.asc().nullsLast().op("uuid_ops"), table.status.asc().nullsLast().op("text_ops")),
+		idx_orders_stock_status: index("idx_orders_stock_status").using("btree", table.stock_id.asc().nullsLast().op("int8_ops"), table.status.asc().nullsLast().op("int8_ops"), table.type.asc().nullsLast().op("text_ops"), table.limit_price_cents.asc().nullsLast().op("uuid_ops")),
+		idx_orders_trader_status: index("idx_orders_trader_status").using("btree", table.trader_id.asc().nullsLast().op("uuid_ops"), table.status.asc().nullsLast().op("uuid_ops")),
 		orders_stock_id_fkey: foreignKey({
 			columns: [table.stock_id],
 			foreignColumns: [stocks.id],

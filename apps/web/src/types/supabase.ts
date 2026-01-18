@@ -188,7 +188,15 @@ export type Database = {
           strategy_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "traders_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trades: {
         Row: {
@@ -244,7 +252,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      last_minute_average_prices: {
+        Row: {
+          average_price_cents: number | null
+          stock_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "stocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
