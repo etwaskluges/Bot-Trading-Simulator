@@ -18,6 +18,8 @@ import {
   TrendingUpIcon,
   X,
   ComputerIcon,
+  Bot,
+  Edit3,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
@@ -66,19 +68,19 @@ const data = {
       icon: TrendingUpIcon,
     },
     {
-      title: 'Seeding Area',
-      url: '/seeding-area',
-      icon: ZapIcon,
+      title: 'Market Configurator',
+      url: '/market-config',
+      icon: BarChartIcon,
     },
     {
-      title: 'Bot Config',
-      url: '/bot-config',
-      icon: ComputerIcon,
+      title: 'Bot Studio',
+      url: '/bot-studio',
+      icon: Bot,
     },
     {
       title: 'Strategy Editor',
       url: '/strategy-editor',
-      icon: FileCodeIcon,
+      icon: Edit3,
     },
   ],
   navClouds: [
@@ -174,8 +176,8 @@ export function AppSidebar({ variant = 'inset', user }: AppSidebarProps) {
 
   // Filter navigation items based on user role
   const filteredNavMain = data.navMain.filter(item => {
-    // Hide Seeding Area for non-moderator users
-    if (item.title === 'Seeding Area') {
+    // Hide Market Configurator for non-moderator users
+    if (item.title === 'Market Configurator') {
       const isModerator = user?.role === 'moderator'
       console.log('Seeding Area visibility:', isModerator, 'user role:', user?.role)
       return isModerator

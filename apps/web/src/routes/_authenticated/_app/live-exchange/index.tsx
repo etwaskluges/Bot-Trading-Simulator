@@ -15,6 +15,7 @@ import {
 import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
+import { Button } from '~/lib/components/ui/button'
 import { DataTable } from '~/lib/components/ui/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
@@ -220,24 +221,14 @@ const EmptyState = () => (
 
       <div className="relative z-10 space-y-6">
         <div className="bg-primary/10 p-5 rounded-3xl w-fit mx-auto group-hover:scale-110 transition-transform duration-500">
-          <Database className="h-10 w-10 text-primary" />
+          <TrendingUp className="h-10 w-10 text-primary" />
         </div>
 
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Exchange Offline</h2>
           <p className="text-muted-foreground font-medium text-sm leading-relaxed">
-            The market is currently empty. You need to initialize the asset catalog and bot fleet before you can access the live exchange.
+            The market is currently closed. A moderator needs to initialize the asset catalog before you can access the live exchange.
           </p>
-        </div>
-
-        <div className="pt-2">
-          <Link
-            to="/seeding-area"
-            className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg hover:shadow-primary/25"
-          >
-            Go to Seeding Area
-            <ArrowRight size={14} />
-          </Link>
         </div>
       </div>
     </div>
@@ -331,8 +322,9 @@ const StockSelector = ({
   setIsStockDropdownOpen: (open: boolean) => void
 }) => (
   <div className="relative z-30 w-full sm:w-auto">
-    <button
-      onClick={() => setIsStockDropdownOpen(!isStockDropdownOpen)}
+    <Button
+      type="button"
+      variant="ghost"
       className={`
         flex items-center justify-between sm:justify-start w-full sm:w-auto gap-3 pl-4 pr-2 py-1.5 rounded-lg border transition-all group outline-none
         ${isStockDropdownOpen
@@ -340,6 +332,7 @@ const StockSelector = ({
           : 'bg-card/50 hover:bg-card border-border hover:border-primary/50 hover:shadow-md'
         }
       `}
+      onClick={() => setIsStockDropdownOpen(!isStockDropdownOpen)}
     >
       <div className="flex flex-col items-start gap-0.5 mr-2">
         <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
@@ -363,7 +356,7 @@ const StockSelector = ({
       `}>
         <ArrowDown size={14} strokeWidth={3} />
       </div>
-    </button>
+    </Button>
 
     {isStockDropdownOpen && (
       <>
@@ -381,16 +374,18 @@ const StockSelector = ({
             </span>
           </div>
           {allStocks.map((stock: any) => (
-            <button
+            <Button
               key={stock.symbol}
-              onClick={() => {
-                setSelectedSymbol(stock.symbol);
-                setIsStockDropdownOpen(false);
-              }}
+              type="button"
+              variant="ghost"
               className={`group w-full text-left px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-all border-l-2 ${selectedSymbol === stock.symbol
                 ? 'bg-primary/5 border-primary pl-5'
                 : 'border-transparent'
                 }`}
+              onClick={() => {
+                setSelectedSymbol(stock.symbol);
+                setIsStockDropdownOpen(false);
+              }}
             >
               <div className="flex flex-col gap-0.5 min-w-0">
                 <div className="flex items-center gap-2">
@@ -414,7 +409,7 @@ const StockSelector = ({
                   {Math.random() > 0.5 ? '+' : '-'}{(Math.random() * 2).toFixed(2)}%
                 </span>
               </div>
-            </button>
+            </Button>
           ))}
         </div>
       </>
@@ -435,16 +430,18 @@ const TimespanPicker = ({
     return (
       <div className="flex sm:hidden items-center justify-between gap-1 bg-muted/20 p-1 rounded-lg">
         {timespanOptions.map((opt) => (
-          <button
+          <Button
             key={opt.value}
-            onClick={() => setTimespan(opt.value)}
+            type="button"
+            variant="ghost"
             className={`flex-1 px-2 py-1.5 text-[10px] font-bold rounded-md transition-all text-center ${timespan === opt.value
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:bg-background/50'
               }`}
+            onClick={() => setTimespan(opt.value)}
           >
             {opt.label}
-          </button>
+          </Button>
         ))}
       </div>
     )
@@ -453,16 +450,18 @@ const TimespanPicker = ({
   return (
     <div className="hidden sm:flex flex-col justify-center gap-2 border-border/50 pl-6">
       {timespanOptions.map((opt) => (
-        <button
+        <Button
           key={opt.value}
-          onClick={() => setTimespan(opt.value)}
+          type="button"
+          variant="ghost"
           className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all text-center min-w-[50px] ${timespan === opt.value
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-muted/50'
             }`}
+          onClick={() => setTimespan(opt.value)}
         >
           {opt.label}
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -503,18 +502,24 @@ const BotFleetControls = ({
       </div>
 
       <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
-        <button
-          onClick={() => setViewMode('grid')}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setViewMode('grid')}
         >
           <LayoutGrid size={14} />
-        </button>
-        <button
-          onClick={() => setViewMode('list')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setViewMode('list')}
         >
           <List size={14} />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

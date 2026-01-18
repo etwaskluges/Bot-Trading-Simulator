@@ -1,3 +1,4 @@
+import { Button } from '~/lib/components/ui/button'
 import { DataTable } from '~/lib/components/ui/data-table'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -94,13 +95,14 @@ const LogsPage = () => {
     <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">System Logs</h2>
-        <button 
+        <Button
           type="button"
-          onClick={() => refetch()} 
+          variant="ghost"
+          onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
         >
           Refresh Logs
-        </button>
+        </Button>
       </div>
       
       <p className="text-muted-foreground">

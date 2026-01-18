@@ -5,6 +5,7 @@ import {
   Clock,
   FileJson,
   Lightbulb,
+  PenLine,
   Plus,
   Save,
   Trash2,
@@ -492,7 +493,7 @@ function RouteComponent() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/5 rounded-full">
-                      <Lightbulb className="h-5 w-5 text-primary" />
+                      <PenLine className="h-5 w-5 text-primary" />
                     </div>
                     <h2 className="text-lg font-bold tracking-tight">Create New Strategy</h2>
                   </div>
@@ -523,10 +524,11 @@ function RouteComponent() {
                       thresholds. You can nest groups for complex AND/OR logic.
                     </div>
                   </div>
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={handleCreateStrategy}
                     disabled={!strategyName.trim()}
-                    type="button"
                     className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${
                       !strategyName.trim()
                         ? 'bg-muted text-muted-foreground cursor-not-allowed'
@@ -535,7 +537,7 @@ function RouteComponent() {
                   >
                     <Plus size={16} className="fill-current" />
                     Create new Strategy
-                  </button>
+                  </Button>
                 </div>
               </div>
 

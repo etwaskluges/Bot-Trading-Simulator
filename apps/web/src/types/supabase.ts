@@ -269,7 +269,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      update_user_role_to_moderator: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

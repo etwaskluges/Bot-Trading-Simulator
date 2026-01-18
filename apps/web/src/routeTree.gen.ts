@@ -18,10 +18,10 @@ import { Route as AuthLoginIndexImport } from './routes/auth/login/index'
 import { Route as AuthenticatedAppIndexImport } from './routes/_authenticated/_app/index'
 import { Route as AuthenticatedAppStrategyEditorIndexImport } from './routes/_authenticated/_app/strategy-editor/index'
 import { Route as AuthenticatedAppSettingsIndexImport } from './routes/_authenticated/_app/settings/index'
-import { Route as AuthenticatedAppSeedingAreaIndexImport } from './routes/_authenticated/_app/seeding-area/index'
+import { Route as AuthenticatedAppMarketConfigIndexImport } from './routes/_authenticated/_app/market-config/index'
 import { Route as AuthenticatedAppLiveExchangeIndexImport } from './routes/_authenticated/_app/live-exchange/index'
 import { Route as AuthenticatedAppHomeIndexImport } from './routes/_authenticated/_app/home/index'
-import { Route as AuthenticatedAppBotConfigIndexImport } from './routes/_authenticated/_app/bot-config/index'
+import { Route as AuthenticatedAppBotStudioIndexImport } from './routes/_authenticated/_app/bot-studio/index'
 import { Route as AuthenticatedAppActivityLogsIndexImport } from './routes/_authenticated/_app/activity-logs/index'
 import { Route as AuthenticatedAppSettingsNotificationsIndexImport } from './routes/_authenticated/_app/settings/notifications/index'
 import { Route as AuthenticatedAppSettingsDisplayIndexImport } from './routes/_authenticated/_app/settings/display/index'
@@ -72,10 +72,10 @@ const AuthenticatedAppSettingsIndexRoute =
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
-const AuthenticatedAppSeedingAreaIndexRoute =
-  AuthenticatedAppSeedingAreaIndexImport.update({
-    id: '/seeding-area/',
-    path: '/seeding-area/',
+const AuthenticatedAppMarketConfigIndexRoute =
+  AuthenticatedAppMarketConfigIndexImport.update({
+    id: '/market-config/',
+    path: '/market-config/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
@@ -92,10 +92,10 @@ const AuthenticatedAppHomeIndexRoute = AuthenticatedAppHomeIndexImport.update({
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 
-const AuthenticatedAppBotConfigIndexRoute =
-  AuthenticatedAppBotConfigIndexImport.update({
-    id: '/bot-config/',
-    path: '/bot-config/',
+const AuthenticatedAppBotStudioIndexRoute =
+  AuthenticatedAppBotStudioIndexImport.update({
+    id: '/bot-studio/',
+    path: '/bot-studio/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
@@ -180,11 +180,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppActivityLogsIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
-    '/_authenticated/_app/bot-config/': {
-      id: '/_authenticated/_app/bot-config/'
-      path: '/bot-config'
-      fullPath: '/bot-config'
-      preLoaderRoute: typeof AuthenticatedAppBotConfigIndexImport
+    '/_authenticated/_app/bot-studio/': {
+      id: '/_authenticated/_app/bot-studio/'
+      path: '/bot-studio'
+      fullPath: '/bot-studio'
+      preLoaderRoute: typeof AuthenticatedAppBotStudioIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
     '/_authenticated/_app/home/': {
@@ -201,11 +201,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLiveExchangeIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
-    '/_authenticated/_app/seeding-area/': {
-      id: '/_authenticated/_app/seeding-area/'
-      path: '/seeding-area'
-      fullPath: '/seeding-area'
-      preLoaderRoute: typeof AuthenticatedAppSeedingAreaIndexImport
+    '/_authenticated/_app/market-config/': {
+      id: '/_authenticated/_app/market-config/'
+      path: '/market-config'
+      fullPath: '/market-config'
+      preLoaderRoute: typeof AuthenticatedAppMarketConfigIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
     '/_authenticated/_app/settings/': {
@@ -258,10 +258,10 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppActivityLogsIndexRoute: typeof AuthenticatedAppActivityLogsIndexRoute
-  AuthenticatedAppBotConfigIndexRoute: typeof AuthenticatedAppBotConfigIndexRoute
+  AuthenticatedAppBotStudioIndexRoute: typeof AuthenticatedAppBotStudioIndexRoute
   AuthenticatedAppHomeIndexRoute: typeof AuthenticatedAppHomeIndexRoute
   AuthenticatedAppLiveExchangeIndexRoute: typeof AuthenticatedAppLiveExchangeIndexRoute
-  AuthenticatedAppSeedingAreaIndexRoute: typeof AuthenticatedAppSeedingAreaIndexRoute
+  AuthenticatedAppMarketConfigIndexRoute: typeof AuthenticatedAppMarketConfigIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppStrategyEditorIndexRoute: typeof AuthenticatedAppStrategyEditorIndexRoute
   AuthenticatedAppSettingsAccountIndexRoute: typeof AuthenticatedAppSettingsAccountIndexRoute
@@ -274,11 +274,12 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppActivityLogsIndexRoute:
     AuthenticatedAppActivityLogsIndexRoute,
-  AuthenticatedAppBotConfigIndexRoute: AuthenticatedAppBotConfigIndexRoute,
+  AuthenticatedAppBotStudioIndexRoute: AuthenticatedAppBotStudioIndexRoute,
   AuthenticatedAppHomeIndexRoute: AuthenticatedAppHomeIndexRoute,
   AuthenticatedAppLiveExchangeIndexRoute:
     AuthenticatedAppLiveExchangeIndexRoute,
-  AuthenticatedAppSeedingAreaIndexRoute: AuthenticatedAppSeedingAreaIndexRoute,
+  AuthenticatedAppMarketConfigIndexRoute:
+    AuthenticatedAppMarketConfigIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppStrategyEditorIndexRoute:
     AuthenticatedAppStrategyEditorIndexRoute,
@@ -313,10 +314,10 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginIndexRoute
   '/auth/register': typeof AuthRegisterIndexRoute
   '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
-  '/bot-config': typeof AuthenticatedAppBotConfigIndexRoute
+  '/bot-studio': typeof AuthenticatedAppBotStudioIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/seeding-area': typeof AuthenticatedAppSeedingAreaIndexRoute
+  '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
@@ -331,10 +332,10 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginIndexRoute
   '/auth/register': typeof AuthRegisterIndexRoute
   '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
-  '/bot-config': typeof AuthenticatedAppBotConfigIndexRoute
+  '/bot-studio': typeof AuthenticatedAppBotStudioIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/seeding-area': typeof AuthenticatedAppSeedingAreaIndexRoute
+  '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
@@ -351,10 +352,10 @@ export interface FileRoutesById {
   '/auth/login/': typeof AuthLoginIndexRoute
   '/auth/register/': typeof AuthRegisterIndexRoute
   '/_authenticated/_app/activity-logs/': typeof AuthenticatedAppActivityLogsIndexRoute
-  '/_authenticated/_app/bot-config/': typeof AuthenticatedAppBotConfigIndexRoute
+  '/_authenticated/_app/bot-studio/': typeof AuthenticatedAppBotStudioIndexRoute
   '/_authenticated/_app/home/': typeof AuthenticatedAppHomeIndexRoute
   '/_authenticated/_app/live-exchange/': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/_authenticated/_app/seeding-area/': typeof AuthenticatedAppSeedingAreaIndexRoute
+  '/_authenticated/_app/market-config/': typeof AuthenticatedAppMarketConfigIndexRoute
   '/_authenticated/_app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/_app/strategy-editor/': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/_authenticated/_app/settings/account/': typeof AuthenticatedAppSettingsAccountIndexRoute
@@ -371,10 +372,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/activity-logs'
-    | '/bot-config'
+    | '/bot-studio'
     | '/home'
     | '/live-exchange'
-    | '/seeding-area'
+    | '/market-config'
     | '/settings'
     | '/strategy-editor'
     | '/settings/account'
@@ -388,10 +389,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/activity-logs'
-    | '/bot-config'
+    | '/bot-studio'
     | '/home'
     | '/live-exchange'
-    | '/seeding-area'
+    | '/market-config'
     | '/settings'
     | '/strategy-editor'
     | '/settings/account'
@@ -406,10 +407,10 @@ export interface FileRouteTypes {
     | '/auth/login/'
     | '/auth/register/'
     | '/_authenticated/_app/activity-logs/'
-    | '/_authenticated/_app/bot-config/'
+    | '/_authenticated/_app/bot-studio/'
     | '/_authenticated/_app/home/'
     | '/_authenticated/_app/live-exchange/'
-    | '/_authenticated/_app/seeding-area/'
+    | '/_authenticated/_app/market-config/'
     | '/_authenticated/_app/settings/'
     | '/_authenticated/_app/strategy-editor/'
     | '/_authenticated/_app/settings/account/'
@@ -458,10 +459,10 @@ export const routeTree = rootRoute
       "children": [
         "/_authenticated/_app/",
         "/_authenticated/_app/activity-logs/",
-        "/_authenticated/_app/bot-config/",
+        "/_authenticated/_app/bot-studio/",
         "/_authenticated/_app/home/",
         "/_authenticated/_app/live-exchange/",
-        "/_authenticated/_app/seeding-area/",
+        "/_authenticated/_app/market-config/",
         "/_authenticated/_app/settings/",
         "/_authenticated/_app/strategy-editor/",
         "/_authenticated/_app/settings/account/",
@@ -484,8 +485,8 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/_app/activity-logs/index.tsx",
       "parent": "/_authenticated/_app"
     },
-    "/_authenticated/_app/bot-config/": {
-      "filePath": "_authenticated/_app/bot-config/index.tsx",
+    "/_authenticated/_app/bot-studio/": {
+      "filePath": "_authenticated/_app/bot-studio/index.tsx",
       "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/home/": {
@@ -496,8 +497,8 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/_app/live-exchange/index.tsx",
       "parent": "/_authenticated/_app"
     },
-    "/_authenticated/_app/seeding-area/": {
-      "filePath": "_authenticated/_app/seeding-area/index.tsx",
+    "/_authenticated/_app/market-config/": {
+      "filePath": "_authenticated/_app/market-config/index.tsx",
       "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/settings/": {
