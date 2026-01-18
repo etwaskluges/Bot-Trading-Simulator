@@ -159,6 +159,7 @@ const getMarketData = createServerFn({ method: 'GET' })
         strategy: schema.traders.strategy,
         balance_cents: schema.traders.balance_cents,
         shares_owned: schema.portfolios.shares_owned,
+        user_id: schema.traders.user_id,
       })
       .from(schema.traders)
       .innerJoin(schema.portfolios, eq(schema.traders.id, schema.portfolios.trader_id))
@@ -471,12 +472,16 @@ const BotFleetControls = ({
   filteredBotsCount,
   filterText,
   setFilterText,
+  showOtherUsersBots,
+  setShowOtherUsersBots,
   viewMode,
   setViewMode
 }: {
   filteredBotsCount: number
   filterText: string
   setFilterText: (text: string) => void
+  showOtherUsersBots: boolean
+  setShowOtherUsersBots: (show: boolean) => void
   viewMode: 'grid' | 'list'
   setViewMode: (mode: 'grid' | 'list') => void
 }) => (
@@ -490,6 +495,22 @@ const BotFleetControls = ({
     </div>
 
     <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="show-other-users-bots"
+          checked={showOtherUsersBots}
+          onChange={(e) => setShowOtherUsersBots(e.target.checked)}
+          className="h-3 w-3 rounded border-border/50 text-primary focus:ring-primary/10 focus:ring-2"
+        />
+        <label
+          htmlFor="show-other-users-bots"
+          className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none"
+        >
+          Show bots from other users
+        </label>
+      </div>
+
       <div className="relative group">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <input
@@ -528,21 +549,32 @@ const BotFleetControls = ({
 const BotGridView = ({
   filteredBots,
   getBotLastAction,
-  stockSymbol
+  stockSymbol,
+  currentUserId
 }: {
   filteredBots: any[]
   getBotLastAction: (traderId: string) => any
   stockSymbol: string
+  currentUserId?: string
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-px bg-border/30">
     {filteredBots.map((bot: any) => {
       const lastAction = getBotLastAction(bot.trader_id)
+      const isOtherUser = currentUserId && bot.user_id !== currentUserId
       return (
-        <div key={bot.trader_id} className="group relative bg-background p-6 hover:bg-muted/5 transition-colors flex flex-col justify-between h-full">
+        <div key={bot.trader_id} className={`group relative p-6 transition-colors flex flex-col justify-between h-full ${isOtherUser ? 'bg-blue-50/30 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50' : 'bg-background hover:bg-muted/5'}`}>
+          
           <div className="space-y-4">
             <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  {isOtherUser && (
+                    <div className="px-2 py-0.5 bg-blue-500 text-white text-[8px] font-bold uppercase tracking-wider rounded-full w-fit">
+                      Other
+                    </div>
+                  )}
+                </div>
+                <h3 className={`font-bold text-sm transition-colors ${isOtherUser ? 'text-blue-700 dark:text-blue-300' : 'text-foreground group-hover:text-primary'}`}>
                   {bot.trader_name}
                 </h3>
                 <p className="text-[10px] text-muted-foreground font-medium uppercase mt-0.5">{bot.strategy} Strategy</p>
@@ -589,19 +621,33 @@ const BotListView = ({
   filteredBots,
   getBotLastAction,
   stockSymbol,
+  currentUserId
 }: {
   filteredBots: any[]
   getBotLastAction: (traderId: string) => any
   stockSymbol: string
+  currentUserId?: string
 }) => {
   // Define columns for DataTable
   const columns: ColumnDef<any>[] = useMemo(() => [
     {
       accessorKey: 'trader_name',
       header: 'Bot Name',
-      cell: ({ row }) => (
-        <span className="font-bold">{row.original.trader_name}</span>
-      ),
+      cell: ({ row }) => {
+        const isOtherUser = currentUserId && row.original.user_id !== currentUserId
+        return (
+          <div className="flex items-center gap-2">
+            {isOtherUser && (
+              <div className="px-1.5 py-0.5 bg-blue-500 text-white text-[8px] font-bold uppercase tracking-wider rounded-full">
+                Other
+              </div>
+            )}
+            <span className={`font-bold ${isOtherUser ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+              {row.original.trader_name}
+            </span>
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'strategy',
@@ -660,7 +706,7 @@ const BotListView = ({
         )
       },
     },
-  ], [stockSymbol, getBotLastAction])
+  ], [stockSymbol, getBotLastAction, currentUserId])
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm">
@@ -680,12 +726,15 @@ const BotListView = ({
 
 // 4. PAGE COMPONENT
 const BoersePage = () => {
+  const { user } = Route.useRouteContext()
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [timespan, setTimespan] = useState<Timespan>('5m')
   // View mode for bot fleet
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filterText, setFilterText] = useState('')
   const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false)
+  const [showOtherUsersBots, setShowOtherUsersBots] = useState(false)
+  const [userLoaded, setUserLoaded] = useState(false)
   const [ruleJson, setRuleJson] = useState(DEFAULT_RULE_JSON)
   const [sessionLabel, setSessionLabel] = useState("Live session")
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
@@ -699,6 +748,13 @@ const BoersePage = () => {
     const timer = setInterval(() => setCurrentTick(Date.now()), 2000)
     return () => clearInterval(timer)
   }, [])
+
+  // Track when user context is loaded
+  useEffect(() => {
+    if (user?.id && !userLoaded) {
+      setUserLoaded(true)
+    }
+  }, [user?.id, userLoaded])
 
   const {
     data: botSessions,
@@ -795,6 +851,11 @@ const BoersePage = () => {
     if (!data || !data.botPortfolios) return []
     let result = [...data.botPortfolios];
 
+    // Filter by user ownership if checkbox is not checked
+    if (!showOtherUsersBots && user?.id) {
+      result = result.filter((b: any) => b.user_id === user.id)
+    }
+
     if (filterText) {
       const lower = filterText.toLowerCase()
       result = result.filter((b: any) =>
@@ -804,7 +865,7 @@ const BoersePage = () => {
     }
 
     return result;
-  }, [data, filterText])
+  }, [data, filterText, showOtherUsersBots, user?.id])
 
   // Pre-process chart data to include timestamps as numbers for Recharts
   const chartData = useMemo(() => {
@@ -1114,6 +1175,8 @@ const BoersePage = () => {
             filteredBotsCount={filteredBots.length}
             filterText={filterText}
             setFilterText={setFilterText}
+            showOtherUsersBots={showOtherUsersBots}
+            setShowOtherUsersBots={setShowOtherUsersBots}
             viewMode={viewMode}
             setViewMode={setViewMode}
           />
@@ -1124,12 +1187,14 @@ const BoersePage = () => {
                 filteredBots={filteredBots}
                 getBotLastAction={getBotLastAction}
                 stockSymbol={stock.symbol}
+                currentUserId={user?.id}
               />
             ) : (
               <BotListView
                 filteredBots={filteredBots}
                 getBotLastAction={getBotLastAction}
                 stockSymbol={stock.symbol}
+                currentUserId={user?.id}
               />
             )}
           </div>
