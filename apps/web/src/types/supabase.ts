@@ -267,12 +267,15 @@ export type Database = {
           },
         ]
       }
+      usercount: {
+        Row: {
+          user_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      update_user_role_to_moderator: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

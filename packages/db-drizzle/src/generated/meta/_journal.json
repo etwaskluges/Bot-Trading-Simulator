@@ -113,6 +113,27 @@
       "when": 1768760123587,
       "tag": "0015_serious_boom_boom",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768816978600,
+      "tag": "0016_normal_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768818825609,
+      "tag": "0017_spotty_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768821431186,
+      "tag": "0018_lush_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }

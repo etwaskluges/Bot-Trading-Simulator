@@ -1,42 +1,79 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { TrendingUp, ArrowRight, LayoutDashboard, Shield, Bot, Activity, Settings, Edit3, UserCheck, Database } from 'lucide-react'
-import { useMutation } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { TrendingUp, ArrowRight, LayoutDashboard, Bot, Activity, Settings, Edit3 } from 'lucide-react'
 
 import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
 import { Button } from '~/lib/components/ui/button'
 
-// Server function to update user role to moderator
-const updateUserRoleToModerator = createServerFn()
+// Server function to check if setup is needed
+const checkSetupRequired = createServerFn()
   .handler(async () => {
     const supabase = getSupabaseServerClient()
 
-    // Call the RPC function to update user role
-    const { error } = await supabase.rpc('update_user_role_to_moderator')
+    // Check if stocks table is empty
+    const { count: stocksCount, error: stocksError } = await supabase
+      .from('stocks')
+      .select('*', { count: 'exact', head: true })
 
-    if (error) {
-      throw new Error(`Failed to update user role: ${error.message}`)
+    if (stocksError) {
+      throw new Error(`Failed to check stocks: ${stocksError.message}`)
     }
 
-    return { success: true }
+    // Get user count from view
+    const { data: userCountData, error: userCountError } = await supabase
+      .from('usercount')
+      .select('user_count')
+
+    if (userCountError) {
+      throw new Error(`Failed to get user count: ${userCountError.message}`)
+    }
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      throw new Error(`Failed to get user: ${userError.message}`)
+    }
+
+    const userCount = userCountData?.[0]?.user_count || 0
+    const isStocksEmpty = stocksCount === 0
+    const isModerator = user?.role === 'moderator'
+    const isFirstUser = userCount === 1
+    const shouldRedirect = isStocksEmpty && (isFirstUser || isModerator)
+
+    console.log({
+      stocksCount,
+      userCountData,
+      user,
+      userCount,
+      isStocksEmpty,
+      isModerator,
+      isFirstUser,
+      shouldRedirect
+    })
+
+    return {
+      shouldRedirect,
+      isStocksEmpty,
+      userCount,
+      isModerator,
+      isFirstUser
+    }
   })
 
+
 export const Route = createFileRoute('/_authenticated/_app/home/')({
+  beforeLoad: async () => {
+    const setupCheck = await checkSetupRequired()
+
+    if (setupCheck.shouldRedirect) {
+      throw redirect({ to: '/setup' })
+    }
+  },
   component: LandingPage,
 })
 
 function LandingPage() {
-  // Mutation to update user role
-  const updateRoleMutation = useMutation({
-    mutationFn: () => updateUserRoleToModerator(),
-    onSuccess: () => {
-      toast.success('Role updated to moderator! Refresh the page to see changes.')
-    },
-    onError: (error) => {
-      toast.error(`Failed to update role: ${error.message}`)
-    },
-  })
 
   return (
     <div className="min-h-screen bg-background p-3 md:p-8 overflow-x-hidden">
@@ -130,80 +167,6 @@ function LandingPage() {
                 </Link>
               </div>
 
-            </div>
-          </div>
-
-        {/* SEPARATOR */}
-        <div className="h-px w-full bg-border/50" />
-
-          {/* ADMIN CONTROLS */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 pb-3">
-              <div className="p-2 bg-primary/5 rounded-full">
-                <Shield size={20} className="text-primary" />
-              </div>
-              <h2 className="text-lg font-bold tracking-tight">Admin Controls</h2>
-            </div>
-
-            {/* ELEVATE PERMISSIONS */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-lg bg-card/30">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <UserCheck size={16} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-foreground text-sm">Elevate Permissions</h3>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Grant moderator access for advanced system management
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => updateRoleMutation.mutate()}
-                disabled={updateRoleMutation.isPending}
-                className="bg-orange-500 hover:bg-orange-600 text-primary-foreground hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-orange-600/25 w-full md:w-auto"
-                size="default"
-              >
-                {updateRoleMutation.isPending ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    Make Moderator
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* CONFIGURE ENVIRONMENT */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-lg bg-card/30">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Database size={16} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-foreground text-sm">Configure Environment</h3>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Set up asset catalogs and start the live exchange
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-
-                <Button
-                  asChild
-                  className="hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-primary/25 w-full sm:w-auto"
-                  size="default"
-                >
-                  <Link to="/market-config">
-                    Configure Market
-                  </Link>
-                </Button>
-              </div>
             </div>
           </div>
 

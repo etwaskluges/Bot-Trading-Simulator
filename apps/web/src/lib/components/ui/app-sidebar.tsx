@@ -10,14 +10,10 @@ import {
   FileTextIcon,
   HelpCircleIcon,
   LayoutDashboardIcon,
-  SearchIcon,
+  Shield,
   SettingsIcon,
-  UsersIcon,
-  RefreshCcw,
-  ZapIcon,
   TrendingUpIcon,
   X,
-  ComputerIcon,
   Bot,
   Edit3,
 } from 'lucide-react'
@@ -68,9 +64,9 @@ const data = {
       icon: TrendingUpIcon,
     },
     {
-      title: 'Market Configurator',
-      url: '/market-config',
-      icon: BarChartIcon,
+      title: 'Setup',
+      url: '/setup',
+      icon: Shield,
     },
     {
       title: 'Bot Studio',
@@ -177,7 +173,7 @@ export function AppSidebar({ variant = 'inset', user }: AppSidebarProps) {
   // Filter navigation items based on user role
   const filteredNavMain = data.navMain.filter(item => {
     // Hide Market Configurator for non-moderator users
-    if (item.title === 'Market Configurator') {
+    if (item.title === 'Setup') {
       const isModerator = user?.role === 'moderator'
       console.log('Seeding Area visibility:', isModerator, 'user role:', user?.role)
       return isModerator

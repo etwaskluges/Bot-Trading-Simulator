@@ -17,6 +17,7 @@ import { Route as AuthRegisterIndexImport } from './routes/auth/register/index'
 import { Route as AuthLoginIndexImport } from './routes/auth/login/index'
 import { Route as AuthenticatedAppIndexImport } from './routes/_authenticated/_app/index'
 import { Route as AuthenticatedAppStrategyEditorIndexImport } from './routes/_authenticated/_app/strategy-editor/index'
+import { Route as AuthenticatedAppSetupIndexImport } from './routes/_authenticated/_app/setup/index'
 import { Route as AuthenticatedAppSettingsIndexImport } from './routes/_authenticated/_app/settings/index'
 import { Route as AuthenticatedAppMarketConfigIndexImport } from './routes/_authenticated/_app/market-config/index'
 import { Route as AuthenticatedAppLiveExchangeIndexImport } from './routes/_authenticated/_app/live-exchange/index'
@@ -64,6 +65,14 @@ const AuthenticatedAppStrategyEditorIndexRoute =
     path: '/strategy-editor/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+
+const AuthenticatedAppSetupIndexRoute = AuthenticatedAppSetupIndexImport.update(
+  {
+    id: '/setup/',
+    path: '/setup/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any,
+)
 
 const AuthenticatedAppSettingsIndexRoute =
   AuthenticatedAppSettingsIndexImport.update({
@@ -215,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
+    '/_authenticated/_app/setup/': {
+      id: '/_authenticated/_app/setup/'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof AuthenticatedAppSetupIndexImport
+      parentRoute: typeof AuthenticatedAppImport
+    }
     '/_authenticated/_app/strategy-editor/': {
       id: '/_authenticated/_app/strategy-editor/'
       path: '/strategy-editor'
@@ -263,6 +279,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLiveExchangeIndexRoute: typeof AuthenticatedAppLiveExchangeIndexRoute
   AuthenticatedAppMarketConfigIndexRoute: typeof AuthenticatedAppMarketConfigIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
+  AuthenticatedAppSetupIndexRoute: typeof AuthenticatedAppSetupIndexRoute
   AuthenticatedAppStrategyEditorIndexRoute: typeof AuthenticatedAppStrategyEditorIndexRoute
   AuthenticatedAppSettingsAccountIndexRoute: typeof AuthenticatedAppSettingsAccountIndexRoute
   AuthenticatedAppSettingsAppearanceIndexRoute: typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -281,6 +298,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppMarketConfigIndexRoute:
     AuthenticatedAppMarketConfigIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
+  AuthenticatedAppSetupIndexRoute: AuthenticatedAppSetupIndexRoute,
   AuthenticatedAppStrategyEditorIndexRoute:
     AuthenticatedAppStrategyEditorIndexRoute,
   AuthenticatedAppSettingsAccountIndexRoute:
@@ -319,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
   '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
+  '/setup': typeof AuthenticatedAppSetupIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -337,6 +356,7 @@ export interface FileRoutesByTo {
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
   '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
   '/settings': typeof AuthenticatedAppSettingsIndexRoute
+  '/setup': typeof AuthenticatedAppSetupIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -357,6 +377,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/live-exchange/': typeof AuthenticatedAppLiveExchangeIndexRoute
   '/_authenticated/_app/market-config/': typeof AuthenticatedAppMarketConfigIndexRoute
   '/_authenticated/_app/settings/': typeof AuthenticatedAppSettingsIndexRoute
+  '/_authenticated/_app/setup/': typeof AuthenticatedAppSetupIndexRoute
   '/_authenticated/_app/strategy-editor/': typeof AuthenticatedAppStrategyEditorIndexRoute
   '/_authenticated/_app/settings/account/': typeof AuthenticatedAppSettingsAccountIndexRoute
   '/_authenticated/_app/settings/appearance/': typeof AuthenticatedAppSettingsAppearanceIndexRoute
@@ -377,6 +398,7 @@ export interface FileRouteTypes {
     | '/live-exchange'
     | '/market-config'
     | '/settings'
+    | '/setup'
     | '/strategy-editor'
     | '/settings/account'
     | '/settings/appearance'
@@ -394,6 +416,7 @@ export interface FileRouteTypes {
     | '/live-exchange'
     | '/market-config'
     | '/settings'
+    | '/setup'
     | '/strategy-editor'
     | '/settings/account'
     | '/settings/appearance'
@@ -412,6 +435,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/live-exchange/'
     | '/_authenticated/_app/market-config/'
     | '/_authenticated/_app/settings/'
+    | '/_authenticated/_app/setup/'
     | '/_authenticated/_app/strategy-editor/'
     | '/_authenticated/_app/settings/account/'
     | '/_authenticated/_app/settings/appearance/'
@@ -464,6 +488,7 @@ export const routeTree = rootRoute
         "/_authenticated/_app/live-exchange/",
         "/_authenticated/_app/market-config/",
         "/_authenticated/_app/settings/",
+        "/_authenticated/_app/setup/",
         "/_authenticated/_app/strategy-editor/",
         "/_authenticated/_app/settings/account/",
         "/_authenticated/_app/settings/appearance/",
@@ -503,6 +528,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/_app/settings/": {
       "filePath": "_authenticated/_app/settings/index.tsx",
+      "parent": "/_authenticated/_app"
+    },
+    "/_authenticated/_app/setup/": {
+      "filePath": "_authenticated/_app/setup/index.tsx",
       "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/strategy-editor/": {
