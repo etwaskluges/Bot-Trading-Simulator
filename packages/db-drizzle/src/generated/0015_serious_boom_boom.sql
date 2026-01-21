@@ -1,0 +1,1 @@
+CREATE MATERIALIZED VIEW "public"."last_hour_average_prices" AS (SELECT trades.stock_id, round(avg(trades.execution_price_cents))::bigint AS average_price_cents FROM trades WHERE trades.executed_at >= (now() - '01:00:00'::interval) GROUP BY trades.stock_id);

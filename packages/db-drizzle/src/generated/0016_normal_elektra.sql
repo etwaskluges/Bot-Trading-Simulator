@@ -1,0 +1,1 @@
+DROP MATERIALIZED VIEW "public"."last_hour_average_prices";
