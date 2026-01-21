@@ -18,6 +18,13 @@ export interface StrategyFacts extends PriceContext {
   volume?: number;
   // Random chance fact (0-100) for randomChance operator
   randomChance?: number;
+  // Core indicator facts (base defaults)
+  ma?: number;
+  rsi?: number;
+  bollingerUpper?: number;
+  bollingerLower?: number;
+  atr?: number;
+  supertrend?: number;
 }
 
 export interface StrategyDecision {
@@ -76,7 +83,13 @@ const ALLOWED_FACTS = new Set([
   "orderAge",
   "orderDeviation",
   "volume",
-  "randomChance"
+  "randomChance",
+  "ma",
+  "rsi",
+  "bollingerUpper",
+  "bollingerLower",
+  "atr",
+  "supertrend"
 ]);
 const ALLOWED_OPERATORS = new Set([
   "lessThan", 
@@ -171,7 +184,7 @@ function normalizeCondition(rawCondition: unknown): RuleProperties["conditions"]
   const fact = typeof condition.fact === "string" ? condition.fact : null;
   const operator = typeof condition.operator === "string" ? condition.operator : null;
 
-  if (!fact || !ALLOWED_FACTS.has(fact)) return null;
+  if (!fact || !isAllowedFactName(fact)) return null;
   if (!operator || !ALLOWED_OPERATORS.has(operator)) return null;
 
   // Handle range operators
@@ -219,7 +232,7 @@ function normalizeValue(rawValue: unknown): unknown | undefined {
   }
 
   if (typeof rawValue === "string") {
-    if (ALLOWED_FACTS.has(rawValue)) {
+    if (isAllowedFactName(rawValue)) {
       return { fact: rawValue };
     }
     const asNumber = Number(rawValue);
@@ -231,12 +244,24 @@ function normalizeValue(rawValue: unknown): unknown | undefined {
 
   if (rawValue && typeof rawValue === "object") {
     const maybeFact = (rawValue as { fact?: unknown }).fact;
-    if (typeof maybeFact === "string" && ALLOWED_FACTS.has(maybeFact)) {
+    if (typeof maybeFact === "string" && isAllowedFactName(maybeFact)) {
       return { fact: maybeFact };
     }
   }
 
   return undefined;
+}
+
+function isAllowedFactName(fact: string): boolean {
+  if (ALLOWED_FACTS.has(fact)) return true;
+  return (
+    /^ma:\d+$/.test(fact) ||
+    /^rsi:\d+$/.test(fact) ||
+    /^bollingerUpper:\d+:\d+(?:\.\d+)?$/.test(fact) ||
+    /^bollingerLower:\d+:\d+(?:\.\d+)?$/.test(fact) ||
+    /^atr:\d+$/.test(fact) ||
+    /^supertrend:\d+:\d+(?:\.\d+)?$/.test(fact)
+  );
 }
 
 function normalizeEvent(rawEvent: unknown): RuleProperties["event"] | null {

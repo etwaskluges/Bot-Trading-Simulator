@@ -120,9 +120,19 @@ export const trades = pgTable("trades", {
 	}
 });
 
-export const app_bootstrap = pgTable("app_bootstrap", {
-	id: boolean().default(true).primaryKey().notNull(),
-	first_moderator_assigned: boolean().default(false).notNull(),
+export const privileges = pgTable("privileges", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	exchange_role: text().default('user').notNull(),
+	user_id: uuid().notNull(),
+}, (table) => {
+	return {
+		privileges_user_id_fkey: foreignKey({
+			columns: [table.user_id],
+			foreignColumns: [users.id],
+			name: "privileges_user_id_fkey"
+		}).onDelete("cascade"),
+		privileges_user_id_key: unique("privileges_user_id_key").on(table.user_id),
+	}
 });
 
 export const portfolios = pgTable("portfolios", {
@@ -149,3 +159,7 @@ export const last_minute_average_prices = pgView("last_minute_average_prices", {
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	average_price_cents: bigint({ mode: "number" }),
 }).as(sql`SELECT trades.stock_id, round(avg(trades.execution_price_cents))::bigint AS average_price_cents FROM trades WHERE trades.executed_at >= (now() - '00:01:00'::interval) GROUP BY trades.stock_id`);
+
+export const usercount = pgView("usercount", {	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	user_count: bigint({ mode: "number" }),
+}).as(sql`SELECT count(*) AS user_count FROM auth.users`);

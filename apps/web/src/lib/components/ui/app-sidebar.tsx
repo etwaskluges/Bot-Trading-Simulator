@@ -18,6 +18,8 @@ import {
   Edit3,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 import {
   Sidebar,
@@ -34,6 +36,7 @@ import { NavDocuments } from '~/lib/components/ui/nav-documents'
 import { NavMain } from '~/lib/components/ui/nav-main'
 import { NavSecondary } from '~/lib/components/ui/nav-secondary'
 import { NavUser } from '~/lib/components/ui/nav-user'
+import { isCurrentUserModeratorFn } from '~/lib/server/isCurrentUserModerator'
 
 interface NavigationItem {
   href: string
@@ -168,15 +171,25 @@ const data = {
 export function AppSidebar({ variant = 'inset', user }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar()
 
-  console.log('AppSidebar user:', user)
+  const { data: isModeratorFromRpc, error: isModeratorError } = useQuery({
+    queryKey: ['current-user-moderator'],
+    queryFn: () => isCurrentUserModeratorFn(),
+    staleTime: 1000 * 60,
+    retry: 1,
+  })
 
-  // Filter navigation items based on user role
+  useEffect(() => {
+    if (isModeratorError) {
+      console.warn('Unable to determine moderator status:', isModeratorError)
+    }
+  }, [isModeratorError])
+
+  const canViewSetup = isModeratorFromRpc ?? user?.exchange_role === 'moderator'
+
+  // Filter navigation items based on the exchange role that syncs with public.privileges
   const filteredNavMain = data.navMain.filter(item => {
-    // Hide Market Configurator for non-moderator users
     if (item.title === 'Setup') {
-      const isModerator = user?.role === 'moderator'
-      console.log('Seeding Area visibility:', isModerator, 'user role:', user?.role)
-      return isModerator
+      return Boolean(canViewSetup)
     }
     return true
   })

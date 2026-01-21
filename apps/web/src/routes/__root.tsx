@@ -9,9 +9,14 @@ import {
 import { createServerFn } from '@tanstack/react-start'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 import appCss from '~/lib/styles/app.css?url'
 import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
+
+export type User = SupabaseUser & {
+  exchange_role: string
+}
 
 const getUser = createServerFn({ method: 'GET' }).handler(async () => {
   const supabase = getSupabaseServerClient()
@@ -20,14 +25,29 @@ const getUser = createServerFn({ method: 'GET' }).handler(async () => {
     data: { user },
   } = await supabase.auth.getUser()
 
-  console.log('getUser', { user })
+  if (!user) {
+    return null
+  }
 
-  return user || null
+  // Fetch user privileges to get the exchange_role
+  const { data: privileges, error: privilegesError } = await supabase
+    .from('privileges')
+    .select('exchange_role')
+    .eq('id', user.id)
+    .single()
+
+  console.log('getUser', { user, privileges, privilegesError })
+
+  // Attach the exchange_role to the user object
+  return {
+    ...user,
+    exchange_role: privileges?.exchange_role || 'user'
+  }
 })
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
-  user: Awaited<ReturnType<typeof getUser>>
+  user: User | null
 }>()({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.fetchQuery({

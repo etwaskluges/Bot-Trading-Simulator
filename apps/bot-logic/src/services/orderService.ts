@@ -1,6 +1,8 @@
 import type { BotData, OrderData, PriceContext, NewOrder } from "../types";
+import type { RuleProperties } from "json-rules-engine";
 import { PRICE_BUFFER_PERCENT, PRICE_DEVIATION_THRESHOLD, TICK_RATE_MS } from "../config";
 import { StrategyEvaluator, StrategyFacts } from "./strategyService";
+import { buildIndicatorFacts, parseIndicatorKey } from "./indicatorUtils";
 
 interface OrderDecisionContext {
   bot: BotData;
@@ -106,13 +108,19 @@ export async function createOrderIfValid(
     timestamp: Date.now(),
     randomChance,
     // Provide default values for order-specific facts to prevent undefined fact errors
-    orderPrice: undefined,
-    orderAge: undefined,
-    orderDeviation: undefined,
-    volume: undefined,
+    orderPrice: 0,
+    orderAge: 0,
+    orderDeviation: 0,
+    volume: 0,
   };
 
   if (!strategyEvaluator) return;
+
+  const indicatorFacts = buildIndicatorFacts(
+    priceContext.priceHistory ?? [currentPrice],
+    collectIndicatorFacts(strategyEvaluator.rules)
+  );
+  const factsWithIndicators = { ...facts, ...indicatorFacts } as StrategyFacts;
 
   // For CANCEL actions, evaluate per-order if orders exist
   if (stockOrders.length > 0) {
@@ -129,7 +137,7 @@ export async function createOrderIfValid(
       const orderAge = Math.floor(ageInMs / TICK_RATE_MS); // Convert to ticks
 
       const cancelFacts: StrategyFacts = {
-        ...facts,
+        ...factsWithIndicators,
         orderPrice,
         orderAge,
         orderDeviation,
@@ -150,7 +158,7 @@ export async function createOrderIfValid(
   }
 
   // For BUY/SELL actions, evaluate normally
-  const decision = await strategyEvaluator.evaluate(facts);
+  const decision = await strategyEvaluator.evaluate(factsWithIndicators);
   if (!decision) return;
 
   console.log(
@@ -201,6 +209,58 @@ export async function createOrderIfValid(
     quantity: quantity,
     status: "OPEN",
   });
+}
+
+function collectIndicatorFacts(rules: RuleProperties[]): Set<string> {
+  const indicators = new Set<string>();
+
+  for (const rule of rules ?? []) {
+    collectFactsFromConditions(rule.conditions, indicators);
+  }
+
+  return indicators;
+}
+
+function collectFactsFromConditions(conditions: RuleProperties["conditions"] | undefined, target: Set<string>) {
+  if (!conditions || typeof conditions !== "object") return;
+
+  const conditionObj = conditions as { all?: unknown; any?: unknown; not?: unknown };
+  const groups = [conditionObj.all, conditionObj.any];
+
+  for (const group of groups) {
+    if (!Array.isArray(group)) continue;
+    for (const entry of group) {
+      collectFactsFromNode(entry, target);
+    }
+  }
+
+  if (conditionObj.not) {
+    collectFactsFromNode(conditionObj.not, target);
+  }
+}
+
+function collectFactsFromNode(node: unknown, target: Set<string>) {
+  if (!node || typeof node !== "object") return;
+  const item = node as { fact?: unknown; value?: unknown; all?: unknown; any?: unknown; not?: unknown };
+  if (typeof item.fact === "string" && isIndicatorFactName(item.fact)) {
+    target.add(item.fact);
+  }
+
+  if (item.value && typeof item.value === "object") {
+    const valueFact = (item.value as { fact?: unknown }).fact;
+    if (typeof valueFact === "string" && isIndicatorFactName(valueFact)) {
+      target.add(valueFact);
+    }
+  }
+
+  if (item.all || item.any || item.not) {
+    collectFactsFromConditions(item as RuleProperties["conditions"], target);
+  }
+}
+
+function isIndicatorFactName(fact: string): boolean {
+  if (parseIndicatorKey(fact)) return true;
+  return ["ma", "rsi", "bollingerUpper", "bollingerLower", "atr", "supertrend"].includes(fact);
 }
 
 function generateQuantityFromDecision(

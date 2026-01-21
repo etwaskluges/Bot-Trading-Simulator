@@ -12,7 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts'
-import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Database, ArrowRight, LayoutGrid, List, Search } from 'lucide-react'
+import { ArrowUp, ArrowDown, TrendingUp, Bot, Activity, Clock, Database, ArrowRight, LayoutGrid, List, Search, AlertTriangle } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/lib/components/ui/button'
@@ -229,6 +229,9 @@ const EmptyState = () => (
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Exchange Offline</h2>
           <p className="text-muted-foreground font-medium text-sm leading-relaxed">
             The market is currently closed. A moderator needs to initialize the asset catalog before you can access the live exchange.
+          </p>
+          <p className="text-muted-foreground font-medium text-xs leading-relaxed mt-2">
+            Visit the <Link to="/market-config" className="text-primary hover:underline">Market Configuration</Link> page to seed the database with stocks.
           </p>
         </div>
       </div>
@@ -816,7 +819,7 @@ const BoersePage = () => {
   }
 
   // Fetch all stocks for dropdown
-  const { data: allStocks, isLoading: isLoadingStocks } = useQuery({
+  const { data: allStocks, isLoading: isLoadingStocks, error: stocksError } = useQuery({
     queryKey: ['all-stocks'],
     queryFn: () => getAllStocks(),
   })
@@ -961,7 +964,36 @@ const BoersePage = () => {
     return <LoadingState message="Initializing Exchange..." />
   }
 
-  // 2. Empty State (No Stocks Found)
+  // 2. Query Error State
+  if (stocksError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50/50 dark:bg-slate-950/50">
+        <div className="max-w-md w-full bg-card p-10 rounded-[2.5rem] border shadow-2xl text-center space-y-8 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 p-8 opacity-[0.03] rotate-12">
+            <AlertTriangle size={200} />
+          </div>
+
+          <div className="relative z-10 space-y-6">
+            <div className="bg-red-500/10 p-5 rounded-3xl w-fit mx-auto">
+              <AlertTriangle className="h-10 w-10 text-red-500" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">Database Connection Error</h2>
+              <p className="text-muted-foreground font-medium text-sm leading-relaxed">
+                Unable to load market data. Please check your database connection and try again.
+              </p>
+              <p className="text-xs text-muted-foreground font-mono bg-muted/50 p-2 rounded mt-4">
+                {stocksError.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 3. Empty State (No Stocks Found)
   if (!allStocks || allStocks.length === 0) {
     return <EmptyState />
   }

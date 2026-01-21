@@ -50,4 +50,5 @@ export interface PriceContext {
   lastMinuteAverage?: number;
   isPriceUp: boolean;
   isPriceDown: boolean;
+  priceHistory?: number[];
 }

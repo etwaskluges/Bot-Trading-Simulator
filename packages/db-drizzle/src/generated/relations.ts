@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { usersInAuth, strategies, traders, stocks, orders, trades, portfolios } from "./schema";
+import { usersInAuth, strategies, traders, stocks, orders, trades, privileges, portfolios } from "./schema";
 
 export const strategiesRelations = relations(strategies, ({one, many}) => ({
 	usersInAuth: one(usersInAuth, {
@@ -12,6 +12,7 @@ export const strategiesRelations = relations(strategies, ({one, many}) => ({
 export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
 	strategies: many(strategies),
 	traders: many(traders),
+	privileges: many(privileges),
 }));
 
 export const tradersRelations = relations(traders, ({one, many}) => ({
@@ -64,6 +65,13 @@ export const tradesRelations = relations(trades, ({one}) => ({
 		fields: [trades.seller_id],
 		references: [traders.id],
 		relationName: "trades_seller_id_traders_id"
+	}),
+}));
+
+export const privilegesRelations = relations(privileges, ({one}) => ({
+	usersInAuth: one(usersInAuth, {
+		fields: [privileges.user_id],
+		references: [usersInAuth.id]
 	}),
 }));
 

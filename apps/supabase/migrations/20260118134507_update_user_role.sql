@@ -1,41 +1,14 @@
--- Add role column to auth.users if it doesn't exist
-ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'authenticated';
-
 -- Function to update user role to moderator
-CREATE OR REPLACE FUNCTION update_user_role_to_moderator()
+CREATE OR REPLACE FUNCTION make_user_moderator()
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 BEGIN
-  -- Update the current user's role to moderator
-  UPDATE auth.users
-  SET role = 'moderator'
-  WHERE id = auth.uid();
-END;
-$$;
-
--- Function to update any user's role (admin only)
-CREATE OR REPLACE FUNCTION update_user_role(target_user_id UUID, new_role TEXT)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  -- Only allow moderators to change roles
-  IF (SELECT role FROM auth.users WHERE id = auth.uid()) != 'moderator' THEN
-    RAISE EXCEPTION 'Only moderators can change user roles';
-  END IF;
-
-  -- Validate role
-  IF new_role NOT IN ('authenticated', 'moderator') THEN
-    RAISE EXCEPTION 'Invalid role. Must be authenticated or moderator';
-  END IF;
-
-  -- Update the target user's role
-  UPDATE auth.users
-  SET role = new_role
-  WHERE id = target_user_id;
+  -- Insert new row for the user if it doesn't exist, or update existing role to moderator
+  INSERT INTO public.privileges (user_id, exchange_role)
+  VALUES (auth.uid(), 'moderator')
+  ON CONFLICT (user_id)
+  DO UPDATE SET exchange_role = 'moderator';
 END;
 $$;
 
@@ -43,9 +16,8 @@ $$;
 CREATE OR REPLACE FUNCTION is_current_user_moderator()
 RETURNS BOOLEAN
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 BEGIN
-  RETURN (SELECT role FROM auth.users WHERE id = auth.uid()) = 'moderator';
+  RETURN (SELECT exchange_role FROM public.privileges WHERE user_id = auth.uid()) = 'moderator';
 END;
 $$;

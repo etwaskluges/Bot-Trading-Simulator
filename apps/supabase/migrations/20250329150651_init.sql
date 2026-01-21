@@ -58,3 +58,10 @@ CREATE TABLE trades (
     quantity INTEGER NOT NULL,
     executed_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- 6. PRIVILEGES
+CREATE TABLE privileges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    exchange_role TEXT NOT NULL DEFAULT 'user',
+    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE
+);

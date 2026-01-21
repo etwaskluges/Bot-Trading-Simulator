@@ -37,7 +37,7 @@ const checkSetupRequired = createServerFn()
 
     const userCount = userCountData?.[0]?.user_count || 0
     const isStocksEmpty = stocksCount === 0
-    const isModerator = user?.role === 'moderator'
+    const isModerator = (user as any)?.exchange_role === 'moderator'
     const isFirstUser = userCount === 1
     const shouldRedirect = isStocksEmpty && (isFirstUser || isModerator)
 

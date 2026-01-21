@@ -313,7 +313,7 @@ export const Route = createFileRoute('/_authenticated/_app/market-config/')({
 
     return {
       user,
-      isModerator: user?.role === 'moderator',
+      isModerator: user?.exchange_role === 'moderator',
     }
   },
   component: RouteComponent,
