@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '~/lib/components/ui/select'
 import { cn } from '~/lib/utils/cn'
-import type { RuleCombinator, RuleCondition, RuleGroup, RuleNode } from '../-utils/strategy-types'
+import type { RuleCombinator, RuleCondition, RuleGroup, RuleNode } from '../-utils/types'
 import { RuleCard } from '~/routes/_authenticated/_app/strategy-editor/-components/RuleCard'
 
 interface GroupEditorProps {
@@ -97,7 +97,7 @@ export function GroupEditor({
 
         <div className="flex flex-col gap-4 py-4">
           {group.children.map((child) => (
-            <SortableNode
+            <RuleNodeRenderer
               key={child.id}
               node={child}
               depth={depth + 1}
@@ -145,7 +145,7 @@ export function GroupEditor({
   )
 }
 
-function SortableNode(props: {
+function RuleNodeRenderer(props: {
   node: RuleNode
   depth: number
   actionType?: 'BUY' | 'SELL' | 'CANCEL'

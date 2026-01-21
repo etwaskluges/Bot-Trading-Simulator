@@ -2,9 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import {
   ArrowLeft,
-  Clock,
   FileJson,
-  Lightbulb,
   PenLine,
   Plus,
   Save,
@@ -17,81 +15,24 @@ import { Badge } from '~/lib/components/ui/badge'
 import { Button } from '~/lib/components/ui/button'
 import { Input } from '~/lib/components/ui/input'
 import { ScrollArea } from '~/lib/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/lib/components/ui/select'
 import { Textarea } from '~/lib/components/ui/textarea'
 import { cn } from '~/lib/utils/cn'
 import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
 import type { Json } from '~/types/supabase'
 
-import { GroupEditor } from './-components/GroupEditor'
 import { RuleEditor } from './-components/RuleEditor'
+import { DEFAULT_STRATEGY_RULES } from './-constants'
 import {
-  appendNode,
   createId,
-  createRuleCondition,
-  createRuleGroup,
   fromRulesEngineConditions,
-  removeNode,
   toRulesEngineConditions,
-  updateGroup,
-  updateRule,
   validateRules,
-} from './-utils/strategy-helpers'
-import type { LimitPriceType, RuleGroup } from './-utils/strategy-types'
+} from './-utils/strategy-rules-conversion'
+import type { LimitPriceType, RuleEngineRule, StatusType, StrategyAction, StrategyDefinition, StrategyPayload, StrategyRow, StrategyRule } from './-utils/types.ts'
 
-type StrategyAction = 'BUY' | 'SELL' | 'CANCEL'
 
-type StrategyRow = {
-  id: string
-  user_id: string
-  name: string
-  rules: {}
-}
 
-type StrategyPayload = {
-  id?: string
-  name: string
-  rules: {}
-}
-
-type StrategyRule = {
-  id: string
-  actionType: StrategyAction
-  priority: number
-  conditions: RuleGroup
-  limitPriceType?: LimitPriceType
-  limitPriceValue?: number
-}
-
-type StrategyDefinition = {
-  id: string
-  name: string
-  updatedAt: string
-  rules: StrategyRule[]
-}
-
-type RuleEngineRule = {
-  priority?: number
-  conditions?: unknown
-  event?: {
-    type?: unknown
-    params?: Record<string, unknown>
-  }
-}
-
-const ACTION_OPTIONS: Array<{ value: StrategyAction; label: string }> = [
-  { value: 'BUY', label: 'Buy' },
-  { value: 'SELL', label: 'Sell' },
-  { value: 'CANCEL', label: 'Cancel Orders' },
-]
-
-const loadStrategiesFn = createServerFn({ method: 'GET' }).handler(async () => {
+const loadUserStrategies = createServerFn({ method: 'GET' }).handler(async () => {
   const supabase = getSupabaseServerClient()
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
@@ -111,6 +52,26 @@ const loadStrategiesFn = createServerFn({ method: 'GET' }).handler(async () => {
   return { strategies: (data ?? []) as StrategyRow[], userId: user.id }
 })
 
+//Converts the Strategy to right format for Inserting or Updating to DB
+const prepareStrategyPayload = (data: StrategyPayload, userId: string): {
+  id?: string
+  name: string
+  rules: Json
+  user_id: string
+} => {
+  const payload = {
+    name: data.name.trim(),
+    rules: data.rules as Json,
+    user_id: userId,
+  }
+
+  if (data.id) {
+    return { ...payload, id: data.id }
+  }
+
+  return payload
+}
+
 const upsertStrategyFn = createServerFn({ method: 'POST' })
   .validator((data: StrategyPayload) => data)
   .handler(async ({ data }) => {
@@ -128,20 +89,7 @@ const upsertStrategyFn = createServerFn({ method: 'POST' })
       throw new Error('Rules payload is required.')
     }
 
-    const insertPayload: {
-      id?: string
-      name: string
-      rules: Json
-      user_id: string
-    } = {
-      name: data.name.trim(),
-      rules: data.rules as Json,
-      user_id: user.id,
-    }
-
-    if (data.id) {
-      insertPayload.id = data.id
-    }
+    const insertPayload = prepareStrategyPayload(data, user.id)
 
     const { data: savedStrategy, error: strategyError } = await supabase
       .from('strategies')
@@ -182,37 +130,13 @@ const deleteStrategyFn = createServerFn({ method: 'POST' })
     return { success: true }
   })
 
-type StatusType = 'idle' | 'loading' | 'success' | 'error'
+
 
 function RouteComponent() {
-  const [step, setStep] = React.useState<'select' | 'edit'>('select')
-  const [mode, setMode] = React.useState<'create' | 'edit'>('create')
+  const [editorMode, setEditorMode] = React.useState<'select' | 'create' | 'edit'>('select')
   const [strategyName, setStrategyName] = React.useState('')
-  const [strategyRules, setStrategyRules] = React.useState<StrategyRule[]>(() => [
-    {
-      id: createId(),
-      actionType: 'BUY',
-      priority: 1,
-      conditions: createRuleGroup(),
-      limitPriceType: 'market',
-      limitPriceValue: 0,
-    },
-    {
-      id: createId(),
-      actionType: 'SELL',
-      priority: 2,
-      conditions: createRuleGroup(),
-      limitPriceType: 'market',
-      limitPriceValue: 0,
-    },
-    {
-      id: createId(),
-      actionType: 'CANCEL',
-      priority: 3,
-      conditions: createRuleGroup(),
-    },
-  ])
-  const [strategies, setStrategies] = React.useState<StrategyRow[]>([])
+  const [strategyRules, setStrategyRules] = React.useState<StrategyRule[]>(DEFAULT_STRATEGY_RULES)
+  const [strategiesFromDB, setStrategies] = React.useState<StrategyRow[]>([])
   const [selectedStrategyId, setSelectedStrategyId] = React.useState<string | null>(null)
   const [status, setStatus] = React.useState<StatusType>('idle')
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null)
@@ -220,10 +144,10 @@ function RouteComponent() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const strategyResult = (await loadStrategiesFn()) as {
+        const response = (await loadUserStrategies()) as {
           strategies: StrategyRow[]
         }
-        setStrategies(strategyResult.strategies)
+        setStrategies(response.strategies)
       } catch (error) {
         setStatus('error')
         setStatusMessage(
@@ -235,76 +159,56 @@ function RouteComponent() {
     load()
   }, [])
 
-  const strategiesView = React.useMemo<StrategyDefinition[]>(
+  const convertStrategyToView = React.useMemo<StrategyDefinition[]>(
     () =>
-      strategies.map((strategy) => {
+      strategiesFromDB.map((strategy) => {
         const ruleArray = Array.isArray(strategy.rules) ? strategy.rules : []
 
-        // Always create exactly 3 rules in order: BUY, SELL, CANCEL
-        const defaultRules: StrategyRule[] = [
-          {
-            id: createId(),
-            actionType: 'BUY',
-            priority: 5,
-            conditions: createRuleGroup(),
-            limitPriceType: 'market',
-            limitPriceValue: 0,
-          },
-          {
-            id: createId(),
-            actionType: 'SELL',
-            priority: 10,
-            conditions: createRuleGroup(),
-            limitPriceType: 'market',
-            limitPriceValue: 0,
-          },
-          {
-            id: createId(),
-            actionType: 'CANCEL',
-            priority: 20,
-            conditions: createRuleGroup(),
-          },
-        ]
+        // Start with a copy of the default rules
+        const rules: StrategyRule[] = DEFAULT_STRATEGY_RULES.map(rule => ({ ...rule, id: createId() }))
 
-        // Map existing rules to the correct positions based on their action type
+        // Create a map of existing rules by action type
+        const existingRulesMap = new Map<StrategyAction, RuleEngineRule>()
         ruleArray.forEach((rule) => {
           const ruleEngineRule = rule as RuleEngineRule
-          const action =
-            typeof ruleEngineRule?.event?.type === 'string'
-              ? (ruleEngineRule.event.type as StrategyAction)
-              : null
+          const action = ruleEngineRule?.event?.type as StrategyAction
 
-          if (action) {
-            const ruleIndex = action === 'BUY' ? 0 : action === 'SELL' ? 1 : action === 'CANCEL' ? 2 : -1
-            if (ruleIndex >= 0) {
-              defaultRules[ruleIndex] = {
-                id: createId(),
-                actionType: action,
-                priority: typeof ruleEngineRule?.priority === 'number' ? ruleEngineRule.priority : defaultRules[ruleIndex].priority,
-                conditions: ruleEngineRule?.conditions
-                  ? fromRulesEngineConditions(ruleEngineRule.conditions)
-                  : createRuleGroup(),
-                limitPriceType:
-                  typeof ruleEngineRule?.event?.params?.limitPriceType === 'string'
-                    ? (ruleEngineRule.event.params.limitPriceType as LimitPriceType)
-                    : defaultRules[ruleIndex].limitPriceType,
-                limitPriceValue:
-                  typeof ruleEngineRule?.event?.params?.limitPriceValue === 'number'
-                    ? ruleEngineRule.event.params.limitPriceValue
-                    : defaultRules[ruleIndex].limitPriceValue,
-              }
+          if (action && ['BUY', 'SELL', 'CANCEL'].includes(action)) {
+            existingRulesMap.set(action, ruleEngineRule)
+          }
+        })
+
+        // Update rules with existing data where available
+        const updatedRules = rules.map((rule) => {
+          const existingRule = existingRulesMap.get(rule.actionType)
+          if (existingRule) {
+            return {
+              id: createId(),
+              actionType: rule.actionType,
+              priority: typeof existingRule?.priority === 'number' ? existingRule.priority : rule.priority,
+              conditions: existingRule?.conditions
+                ? fromRulesEngineConditions(existingRule.conditions)
+                : rule.conditions,
+              limitPriceType:
+                typeof existingRule?.event?.params?.limitPriceType === 'string'
+                  ? (existingRule.event.params.limitPriceType as LimitPriceType)
+                  : rule.limitPriceType,
+              limitPriceValue:
+                typeof existingRule?.event?.params?.limitPriceValue === 'number'
+                  ? existingRule.event.params.limitPriceValue
+                  : rule.limitPriceValue,
             }
           }
+          return rule
         })
 
         return {
           id: strategy.id,
           name: strategy.name,
-          updatedAt: 'Recently',
-          rules: defaultRules,
+          rules: updatedRules,
         }
       }),
-    [strategies],
+    [strategiesFromDB],
   )
 
   const issues = React.useMemo(() => {
@@ -316,7 +220,7 @@ function RouteComponent() {
   }, [strategyRules])
   const isValid = issues.length === 0
 
-  const rulesPreview = React.useMemo(
+  const createJsonPreview = React.useMemo(
     () =>
       JSON.stringify(
         strategyRules.map((rule) => ({
@@ -341,52 +245,27 @@ function RouteComponent() {
   )
 
   function handleSelectStrategy(strategy: StrategyDefinition) {
-    setMode('edit')
+    setEditorMode('edit')
     setSelectedStrategyId(strategy.id)
     setStrategyName(strategy.name)
     setStrategyRules(strategy.rules)
     setStatus('idle')
     setStatusMessage(null)
-    setStep('edit')
   }
 
   function handleCreateStrategy() {
     if (!strategyName.trim()) {
       return
     }
-    setMode('create')
+    setEditorMode('create')
     setSelectedStrategyId(null)
-    setStrategyRules([
-      {
-        id: createId(),
-        actionType: 'BUY',
-        priority: 1,
-        conditions: createRuleGroup(),
-        limitPriceType: 'market',
-        limitPriceValue: 0,
-      },
-      {
-        id: createId(),
-        actionType: 'SELL',
-        priority: 2,
-        conditions: createRuleGroup(),
-        limitPriceType: 'market',
-        limitPriceValue: 0,
-      },
-      {
-        id: createId(),
-        actionType: 'CANCEL',
-        priority: 3,
-        conditions: createRuleGroup(),
-      },
-    ])
+    setStrategyRules(DEFAULT_STRATEGY_RULES)
     setStatus('idle')
     setStatusMessage(null)
-    setStep('edit')
   }
 
-  function handleBack() {
-    setStep('select')
+  function handleReturnToSelection() {
+    setEditorMode('select')
   }
 
   async function handleSaveStrategy() {
@@ -423,7 +302,7 @@ function RouteComponent() {
       }))
 
       const payload: StrategyPayload = {
-        id: mode === 'edit' ? selectedStrategyId ?? undefined : undefined,
+        id: editorMode === 'edit' ? selectedStrategyId ?? undefined : undefined,
         name: strategyName.trim(),
         rules: rulesPayload,
       }
@@ -443,7 +322,7 @@ function RouteComponent() {
         return next.sort((a, b) => a.name.localeCompare(b.name))
       })
       setSelectedStrategyId(updatedStrategy.id)
-      setMode('edit')
+      setEditorMode('edit')
       setStatus('success')
       setStatusMessage('Strategy saved.')
     } catch (error) {
@@ -465,9 +344,9 @@ function RouteComponent() {
       // Remove the strategy from local state
       setStrategies((current) => current.filter((strategy) => strategy.id !== strategyId))
 
-      // If the deleted strategy was currently being edited, go back to select step
+      // If the deleted strategy was currently being edited, go back to select mode
       if (selectedStrategyId === strategyId) {
-        setStep('select')
+        setEditorMode('select')
         setSelectedStrategyId(null)
         setStrategyName('')
         setStrategyRules([])
@@ -486,7 +365,7 @@ function RouteComponent() {
   return (
     <div className="min-h-screen bg-background p-3 md:p-8 overflow-x-hidden">
       <div className="max-w-[1600px] w-full mx-auto space-y-12">
-        {step === 'select' ? (
+        {editorMode === 'select' ? (
           <div className="space-y-12">
             <div className="grid gap-6 md:grid-cols-[1fr_1fr] lg:grid-cols-[1fr_1fr] items-start">
               <div className="space-y-8 lg:border-r lg:border-border/50 lg:pr-12">
@@ -556,7 +435,7 @@ function RouteComponent() {
 
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="flex flex-col gap-3">
-                    {strategiesView.map((strategy) => (
+                    {convertStrategyToView.map((strategy) => (
                       <div
                         key={strategy.id}
                         className="group border-border/30 bg-background/30 hover:bg-muted/30 flex items-center justify-between rounded-2xl border px-5 py-4 transition-all duration-300 cursor-pointer"
@@ -565,12 +444,6 @@ function RouteComponent() {
                         <div className="space-y-1">
                           <div className="font-bold text-foreground group-hover:text-primary transition-colors">
                             {strategy.name}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3 w-3 text-muted-foreground opacity-50" />
-                            <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-wider opacity-60">
-                              Updated {strategy.updatedAt}
-                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -581,17 +454,17 @@ function RouteComponent() {
                               e.stopPropagation()
                               handleDeleteStrategy(strategy.id)
                             }}
-                            className="h-8 w-8 rounded-full bg-red-500/5 hover:bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            className="h-8 w-8 rounded-full bg-red-500/5 hover:bg-red-500/10 text-red-500 opacity-70 group-hover:opacity-100 transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-all">
+                          <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary opacity-70 group-hover:opacity-100 transition-all">
                             <ArrowLeft className="h-4 w-4 rotate-180" />
                           </div>
                         </div>
                       </div>
                     ))}
-                    {strategiesView.length === 0 && (
+                    {convertStrategyToView.length === 0 && (
                       <div className="rounded-2xl border border-dashed border-border/40 p-6 text-center text-xs text-muted-foreground">
                         No strategies yet. Create the first one.
                       </div>
@@ -608,14 +481,14 @@ function RouteComponent() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={handleBack}
+                  onClick={handleReturnToSelection}
                   className="rounded-full border-border/50 hover:bg-primary/5 hover:text-primary hover:border-primary/50 transition-all"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
                   <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-0.5">
-                    {mode === 'create' ? 'Configuring New Strategy' : 'Editing Strategy'}
+                    {editorMode === 'create' ? 'Configuring New Strategy' : 'Editing Strategy'}
                   </div>
                   <div className="text-2xl font-black tracking-tight uppercase">
                     {strategyName || 'Untitled Strategy'}
@@ -625,7 +498,7 @@ function RouteComponent() {
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
-                  onClick={handleBack}
+                  onClick={handleReturnToSelection}
                   className="rounded-xl text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-[10px] h-11 px-6"
                 >
                   Discard Changes
@@ -679,9 +552,6 @@ function RouteComponent() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold tracking-tight">Rules Builder</h2>
-                      <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
-                        Drag and drop to nest conditions.
-                      </p>
                     </div>
                   </div>
                   <Badge
@@ -751,7 +621,7 @@ function RouteComponent() {
                     </div>
                   </div>
                   <Textarea
-                    value={rulesPreview}
+                    value={createJsonPreview}
                     readOnly
                     className="min-h-[644px] bg-muted/20 border-border/30 rounded-3xl font-mono text-[11px] leading-relaxed p-8 focus:ring-0 resize-none shadow-inner"
                   />

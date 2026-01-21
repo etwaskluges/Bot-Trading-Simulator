@@ -18,8 +18,8 @@ import {
   updateGroup,
   updateRule,
   validateRules,
-} from '../-utils/strategy-helpers'
-import type { LimitPriceType, RuleGroup } from '../-utils/strategy-types'
+} from '../-utils/strategy-rules-conversion'
+import type { LimitPriceType, RuleGroup } from '../-utils/types'
 type StrategyAction = 'BUY' | 'SELL' | 'CANCEL'
 
 type StrategyRule = {
