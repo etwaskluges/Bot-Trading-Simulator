@@ -250,7 +250,7 @@ export function toRulesEngineConditions(group: RuleGroup): Record<string, unknow
   return { [group.combinator]: conditions }
 }
 
-type RawConditionNode = {
+type RulesEngineConditionPayload = {
   fact?: unknown
   operator?: unknown
   value?: unknown
@@ -262,12 +262,12 @@ type RawConditionNode = {
   not?: unknown
 }
 
-function isRuleCondition(node: RawConditionNode): boolean {
+function isRuleCondition(node: RulesEngineConditionPayload): boolean {
   return typeof node.fact === 'string' && typeof node.operator === 'string' &&
          ('value' in node || 'valueMin' in node || 'valueMax' in node || 'randomProbability' in node)
 }
 
-function toRuleCondition(node: RawConditionNode): RuleCondition {
+function toRuleCondition(node: RulesEngineConditionPayload): RuleCondition {
   const parsedFact = typeof node.fact === 'string' ? parseIndicatorFact(node.fact) : null
   const fact = parsedFact ? (parsedFact.base as RuleFact) : typeof node.fact === 'string' ? (node.fact as RuleFact) : ''
   const operator =
@@ -381,32 +381,32 @@ function requiresMultiplier(fact: IndicatorBaseFact): boolean {
 
 function toRuleGroup(
   combinator: RuleCombinator,
-  children: RawConditionNode[] = [],
+  children: RulesEngineConditionPayload[] = [],
 ): RuleGroup {
   const parsedChildren = children.map((child) => toRuleNode(child))
   return createRuleGroup(parsedChildren, combinator)
 }
 
-function toRuleNode(node: RawConditionNode): RuleNode {
+function toRuleNode(node: RulesEngineConditionPayload): RuleNode {
   if (isRuleCondition(node)) {
     return toRuleCondition(node)
   }
 
   if (Array.isArray(node.all)) {
-    return toRuleGroup('all', node.all as RawConditionNode[])
+    return toRuleGroup('all', node.all as RulesEngineConditionPayload[])
   }
 
   if (Array.isArray(node.any)) {
-    return toRuleGroup('any', node.any as RawConditionNode[])
+    return toRuleGroup('any', node.any as RulesEngineConditionPayload[])
   }
 
   if (node.not && typeof node.not === 'object') {
-    const payload = node.not as RawConditionNode
+    const payload = node.not as RulesEngineConditionPayload
     if (Array.isArray(payload.all)) {
-      return toRuleGroup('not', payload.all as RawConditionNode[])
+      return toRuleGroup('not', payload.all as RulesEngineConditionPayload[])
     }
     if (Array.isArray(payload.any)) {
-      return toRuleGroup('not', payload.any as RawConditionNode[])
+      return toRuleGroup('not', payload.any as RulesEngineConditionPayload[])
     }
     return createRuleGroup([toRuleNode(payload)], 'not')
   }
@@ -419,13 +419,13 @@ export function fromRulesEngineConditions(conditions: unknown): RuleGroup {
     return createRuleGroup()
   }
 
-  const node = conditions as RawConditionNode
+  const node = conditions as RulesEngineConditionPayload
   if (Array.isArray(node.all)) {
-    return toRuleGroup('all', node.all as RawConditionNode[])
+    return toRuleGroup('all', node.all as RulesEngineConditionPayload[])
   }
 
   if (Array.isArray(node.any)) {
-    return toRuleGroup('any', node.any as RawConditionNode[])
+    return toRuleGroup('any', node.any as RulesEngineConditionPayload[])
   }
 
   if (node.not && typeof node.not === 'object') {
