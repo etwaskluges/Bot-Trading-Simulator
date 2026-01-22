@@ -1,7 +1,8 @@
 import type { BotData, OrderData, PriceContext, NewOrder } from "../types";
 import type { RuleProperties } from "json-rules-engine";
-import { PRICE_BUFFER_PERCENT, PRICE_DEVIATION_THRESHOLD, TICK_RATE_MS } from "../config";
-import { StrategyEvaluator, StrategyFacts } from "./strategyService";
+import { PRICE_BUFFER_PERCENT, TICK_RATE_MS } from "../config";
+import { StrategyEvaluator } from "./strategyService";
+import type { StrategyFacts, StrategyDecision } from "./strategyService";
 import { buildIndicatorFacts, parseIndicatorKey } from "./indicatorUtils";
 
 interface OrderDecisionContext {
@@ -14,50 +15,6 @@ interface OrderDecisionContext {
   strategyEvaluator: StrategyEvaluator | null;
   ordersToCancelIds: string[];
 }
-
-/**
- * Determines which existing orders should be cancelled
- */
-export function determineOrdersToCancell(
-  stockOrders: OrderData[],
-  strategy: string | null | undefined,
-  priceContext: PriceContext,
-  ordersToCancelIds: string[],
-  botAvailableBalance: Map<string, number>,
-  botId: string
-): void {
-  const { currentPrice, isPriceUp, isPriceDown } = priceContext;
-
-  for (const order of stockOrders) {
-    const limitPrice = Number(order.limit_price_cents);
-    const diffPercent = Math.abs(limitPrice - currentPrice) / currentPrice;
-
-    let shouldCancel = false;
-
-    if (strategy === "random" && diffPercent > PRICE_DEVIATION_THRESHOLD) {
-      shouldCancel = true;
-    }
-
-    if (strategy === "momentum") {
-      if (order.type === "BUY" && isPriceDown) shouldCancel = true;
-      if (order.type === "SELL" && isPriceUp) shouldCancel = true;
-    }
-
-    if (strategy === "random") {
-      shouldCancel = true;
-    }
-
-    if (shouldCancel) {
-      ordersToCancelIds.push(order.id);
-      if (order.type === "BUY") {
-        const currentBal = botAvailableBalance.get(botId) || 0;
-        const refund = Number(order.limit_price_cents) * order.quantity;
-        botAvailableBalance.set(botId, currentBal + refund);
-      }
-    }
-  }
-}
-
 /**
  * Creates a new order if conditions are met
  */
@@ -264,11 +221,14 @@ function isIndicatorFactName(fact: string): boolean {
 }
 
 function generateQuantityFromDecision(
-  decision: { type: "BUY" | "SELL"; params: Record<string, any> },
+  decision: StrategyDecision,
   currentPrice: number,
   availableBalance: number,
   sharesOwned: number
 ): number {
+  if (decision.type === "CANCEL") {
+    throw new Error("generateQuantityFromDecision must only be called for BUY/SELL rules");
+  }
   const sizePct = Number(decision.params?.sizePct);
   if (!Number.isFinite(sizePct) || sizePct <= 0) {
     return generateQuantity();

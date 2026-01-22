@@ -50,11 +50,6 @@ interface AppSidebarProps {
 }
 
 const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
   navMain: [
     {
       title: 'Home',
@@ -131,11 +126,6 @@ const data = {
     },
   ],
   navSecondary: [
-    {
-      title: 'Settings',
-      url: '/settings',
-      icon: SettingsIcon,
-    },
     {
       title: 'Get Help',
       url: 'https://www.hilfe-info.de/Webs/hilfeinfo/EN/HelpAndAdvice/Psychological_support/PsychologischeUnterstuetzung_node.html',
@@ -226,7 +216,11 @@ export function AppSidebar({ variant = 'inset', user }: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={{
+          name: user?.user_metadata?.name || user?.email || 'User',
+          email: user?.email || '',
+          avatar: user?.email.substring(0,2).toUpperCase() || 'U'
+        }} />
       </SidebarFooter>
     </Sidebar>
   )

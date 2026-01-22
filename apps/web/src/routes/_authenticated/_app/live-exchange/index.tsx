@@ -23,7 +23,6 @@ import {
   startBotSessionFn,
   stopBotSessionFn,
 } from '~/lib/server/botSessions'
-import type { BotSessionSummary } from '~/types/bot-sessions'
 
 type Timespan = '5m' | '10m' | '1h' | '1d';
 
@@ -328,14 +327,7 @@ const StockSelector = ({
   <div className="relative z-30 w-full sm:w-auto">
     <Button
       type="button"
-      variant="ghost"
-      className={`
-        flex items-center justify-between sm:justify-start w-full sm:w-auto gap-3 pl-4 pr-2 py-1.5 rounded-lg border transition-all group outline-none
-        ${isStockDropdownOpen
-          ? 'bg-card border-primary ring-4 ring-primary/10 shadow-lg'
-          : 'bg-card/50 hover:bg-card border-border hover:border-primary/50 hover:shadow-md'
-        }
-      `}
+      variant="outline"
       onClick={() => setIsStockDropdownOpen(!isStockDropdownOpen)}
     >
       <div className="flex flex-col items-start gap-0.5 mr-2">
@@ -407,10 +399,6 @@ const StockSelector = ({
               <div className="text-right shrink-0">
                 <span className="font-mono text-xs font-bold block text-foreground">
                   ${(Number(stock.current_price_cents) / 100).toFixed(2)}
-                </span>
-                <span className={`text-[10px] font-medium ${Math.random() > 0.5 ? 'text-emerald-500' : 'text-red-500'
-                  }`}>
-                  {Math.random() > 0.5 ? '+' : '-'}{(Math.random() * 2).toFixed(2)}%
                 </span>
               </div>
             </Button>
@@ -530,7 +518,7 @@ const BotFleetControls = ({
           type="button"
           variant="ghost"
           size="icon"
-          className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`${viewMode === 'grid' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           onClick={() => setViewMode('grid')}
         >
           <LayoutGrid size={14} />
@@ -539,7 +527,7 @@ const BotFleetControls = ({
           type="button"
           variant="ghost"
           size="icon"
-          className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`${viewMode === 'list' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
           onClick={() => setViewMode('list')}
         >
           <List size={14} />
@@ -717,7 +705,7 @@ const BotListView = ({
         data={filteredBots}
         columns={columns}
         showSelectColumn={false}
-        pageSize={50}
+        pageSize={10}
         emptyState={{
           title: 'No Bots Found',
           subtitle: 'Try adjusting your search filters'

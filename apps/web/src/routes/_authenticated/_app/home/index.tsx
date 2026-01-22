@@ -1,9 +1,8 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { TrendingUp, ArrowRight, LayoutDashboard, Bot, Activity, Settings, Edit3 } from 'lucide-react'
+import { TrendingUp, ArrowRight, LayoutDashboard, Bot, Edit3 } from 'lucide-react'
 
 import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
-import { Button } from '~/lib/components/ui/button'
 
 // Server function to check if setup is needed
 const checkSetupRequired = createServerFn()

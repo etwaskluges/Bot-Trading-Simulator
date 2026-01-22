@@ -18,16 +18,9 @@ import { Route as AuthLoginIndexImport } from './routes/auth/login/index'
 import { Route as AuthenticatedAppIndexImport } from './routes/_authenticated/_app/index'
 import { Route as AuthenticatedAppStrategyEditorIndexImport } from './routes/_authenticated/_app/strategy-editor/index'
 import { Route as AuthenticatedAppSetupIndexImport } from './routes/_authenticated/_app/setup/index'
-import { Route as AuthenticatedAppSettingsIndexImport } from './routes/_authenticated/_app/settings/index'
-import { Route as AuthenticatedAppMarketConfigIndexImport } from './routes/_authenticated/_app/market-config/index'
 import { Route as AuthenticatedAppLiveExchangeIndexImport } from './routes/_authenticated/_app/live-exchange/index'
 import { Route as AuthenticatedAppHomeIndexImport } from './routes/_authenticated/_app/home/index'
 import { Route as AuthenticatedAppBotStudioIndexImport } from './routes/_authenticated/_app/bot-studio/index'
-import { Route as AuthenticatedAppActivityLogsIndexImport } from './routes/_authenticated/_app/activity-logs/index'
-import { Route as AuthenticatedAppSettingsNotificationsIndexImport } from './routes/_authenticated/_app/settings/notifications/index'
-import { Route as AuthenticatedAppSettingsDisplayIndexImport } from './routes/_authenticated/_app/settings/display/index'
-import { Route as AuthenticatedAppSettingsAppearanceIndexImport } from './routes/_authenticated/_app/settings/appearance/index'
-import { Route as AuthenticatedAppSettingsAccountIndexImport } from './routes/_authenticated/_app/settings/account/index'
 
 // Create/Update Routes
 
@@ -74,20 +67,6 @@ const AuthenticatedAppSetupIndexRoute = AuthenticatedAppSetupIndexImport.update(
   } as any,
 )
 
-const AuthenticatedAppSettingsIndexRoute =
-  AuthenticatedAppSettingsIndexImport.update({
-    id: '/settings/',
-    path: '/settings/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppMarketConfigIndexRoute =
-  AuthenticatedAppMarketConfigIndexImport.update({
-    id: '/market-config/',
-    path: '/market-config/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
 const AuthenticatedAppLiveExchangeIndexRoute =
   AuthenticatedAppLiveExchangeIndexImport.update({
     id: '/live-exchange/',
@@ -105,41 +84,6 @@ const AuthenticatedAppBotStudioIndexRoute =
   AuthenticatedAppBotStudioIndexImport.update({
     id: '/bot-studio/',
     path: '/bot-studio/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppActivityLogsIndexRoute =
-  AuthenticatedAppActivityLogsIndexImport.update({
-    id: '/activity-logs/',
-    path: '/activity-logs/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppSettingsNotificationsIndexRoute =
-  AuthenticatedAppSettingsNotificationsIndexImport.update({
-    id: '/settings/notifications/',
-    path: '/settings/notifications/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppSettingsDisplayIndexRoute =
-  AuthenticatedAppSettingsDisplayIndexImport.update({
-    id: '/settings/display/',
-    path: '/settings/display/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppSettingsAppearanceIndexRoute =
-  AuthenticatedAppSettingsAppearanceIndexImport.update({
-    id: '/settings/appearance/',
-    path: '/settings/appearance/',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-
-const AuthenticatedAppSettingsAccountIndexRoute =
-  AuthenticatedAppSettingsAccountIndexImport.update({
-    id: '/settings/account/',
-    path: '/settings/account/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
@@ -182,13 +126,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRegisterIndexImport
       parentRoute: typeof rootRoute
     }
-    '/_authenticated/_app/activity-logs/': {
-      id: '/_authenticated/_app/activity-logs/'
-      path: '/activity-logs'
-      fullPath: '/activity-logs'
-      preLoaderRoute: typeof AuthenticatedAppActivityLogsIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
     '/_authenticated/_app/bot-studio/': {
       id: '/_authenticated/_app/bot-studio/'
       path: '/bot-studio'
@@ -210,20 +147,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLiveExchangeIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
-    '/_authenticated/_app/market-config/': {
-      id: '/_authenticated/_app/market-config/'
-      path: '/market-config'
-      fullPath: '/market-config'
-      preLoaderRoute: typeof AuthenticatedAppMarketConfigIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
-    '/_authenticated/_app/settings/': {
-      id: '/_authenticated/_app/settings/'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedAppSettingsIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
     '/_authenticated/_app/setup/': {
       id: '/_authenticated/_app/setup/'
       path: '/setup'
@@ -238,34 +161,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppStrategyEditorIndexImport
       parentRoute: typeof AuthenticatedAppImport
     }
-    '/_authenticated/_app/settings/account/': {
-      id: '/_authenticated/_app/settings/account/'
-      path: '/settings/account'
-      fullPath: '/settings/account'
-      preLoaderRoute: typeof AuthenticatedAppSettingsAccountIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
-    '/_authenticated/_app/settings/appearance/': {
-      id: '/_authenticated/_app/settings/appearance/'
-      path: '/settings/appearance'
-      fullPath: '/settings/appearance'
-      preLoaderRoute: typeof AuthenticatedAppSettingsAppearanceIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
-    '/_authenticated/_app/settings/display/': {
-      id: '/_authenticated/_app/settings/display/'
-      path: '/settings/display'
-      fullPath: '/settings/display'
-      preLoaderRoute: typeof AuthenticatedAppSettingsDisplayIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
-    '/_authenticated/_app/settings/notifications/': {
-      id: '/_authenticated/_app/settings/notifications/'
-      path: '/settings/notifications'
-      fullPath: '/settings/notifications'
-      preLoaderRoute: typeof AuthenticatedAppSettingsNotificationsIndexImport
-      parentRoute: typeof AuthenticatedAppImport
-    }
   }
 }
 
@@ -273,42 +168,22 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
-  AuthenticatedAppActivityLogsIndexRoute: typeof AuthenticatedAppActivityLogsIndexRoute
   AuthenticatedAppBotStudioIndexRoute: typeof AuthenticatedAppBotStudioIndexRoute
   AuthenticatedAppHomeIndexRoute: typeof AuthenticatedAppHomeIndexRoute
   AuthenticatedAppLiveExchangeIndexRoute: typeof AuthenticatedAppLiveExchangeIndexRoute
-  AuthenticatedAppMarketConfigIndexRoute: typeof AuthenticatedAppMarketConfigIndexRoute
-  AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppSetupIndexRoute: typeof AuthenticatedAppSetupIndexRoute
   AuthenticatedAppStrategyEditorIndexRoute: typeof AuthenticatedAppStrategyEditorIndexRoute
-  AuthenticatedAppSettingsAccountIndexRoute: typeof AuthenticatedAppSettingsAccountIndexRoute
-  AuthenticatedAppSettingsAppearanceIndexRoute: typeof AuthenticatedAppSettingsAppearanceIndexRoute
-  AuthenticatedAppSettingsDisplayIndexRoute: typeof AuthenticatedAppSettingsDisplayIndexRoute
-  AuthenticatedAppSettingsNotificationsIndexRoute: typeof AuthenticatedAppSettingsNotificationsIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
-  AuthenticatedAppActivityLogsIndexRoute:
-    AuthenticatedAppActivityLogsIndexRoute,
   AuthenticatedAppBotStudioIndexRoute: AuthenticatedAppBotStudioIndexRoute,
   AuthenticatedAppHomeIndexRoute: AuthenticatedAppHomeIndexRoute,
   AuthenticatedAppLiveExchangeIndexRoute:
     AuthenticatedAppLiveExchangeIndexRoute,
-  AuthenticatedAppMarketConfigIndexRoute:
-    AuthenticatedAppMarketConfigIndexRoute,
-  AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppSetupIndexRoute: AuthenticatedAppSetupIndexRoute,
   AuthenticatedAppStrategyEditorIndexRoute:
     AuthenticatedAppStrategyEditorIndexRoute,
-  AuthenticatedAppSettingsAccountIndexRoute:
-    AuthenticatedAppSettingsAccountIndexRoute,
-  AuthenticatedAppSettingsAppearanceIndexRoute:
-    AuthenticatedAppSettingsAppearanceIndexRoute,
-  AuthenticatedAppSettingsDisplayIndexRoute:
-    AuthenticatedAppSettingsDisplayIndexRoute,
-  AuthenticatedAppSettingsNotificationsIndexRoute:
-    AuthenticatedAppSettingsNotificationsIndexRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
@@ -331,18 +206,11 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedAppIndexRoute
   '/auth/login': typeof AuthLoginIndexRoute
   '/auth/register': typeof AuthRegisterIndexRoute
-  '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
   '/bot-studio': typeof AuthenticatedAppBotStudioIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
-  '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/setup': typeof AuthenticatedAppSetupIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
-  '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
-  '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
-  '/settings/display': typeof AuthenticatedAppSettingsDisplayIndexRoute
-  '/settings/notifications': typeof AuthenticatedAppSettingsNotificationsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -350,18 +218,11 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedAppIndexRoute
   '/auth/login': typeof AuthLoginIndexRoute
   '/auth/register': typeof AuthRegisterIndexRoute
-  '/activity-logs': typeof AuthenticatedAppActivityLogsIndexRoute
   '/bot-studio': typeof AuthenticatedAppBotStudioIndexRoute
   '/home': typeof AuthenticatedAppHomeIndexRoute
   '/live-exchange': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/market-config': typeof AuthenticatedAppMarketConfigIndexRoute
-  '/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/setup': typeof AuthenticatedAppSetupIndexRoute
   '/strategy-editor': typeof AuthenticatedAppStrategyEditorIndexRoute
-  '/settings/account': typeof AuthenticatedAppSettingsAccountIndexRoute
-  '/settings/appearance': typeof AuthenticatedAppSettingsAppearanceIndexRoute
-  '/settings/display': typeof AuthenticatedAppSettingsDisplayIndexRoute
-  '/settings/notifications': typeof AuthenticatedAppSettingsNotificationsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -371,18 +232,11 @@ export interface FileRoutesById {
   '/_authenticated/_app/': typeof AuthenticatedAppIndexRoute
   '/auth/login/': typeof AuthLoginIndexRoute
   '/auth/register/': typeof AuthRegisterIndexRoute
-  '/_authenticated/_app/activity-logs/': typeof AuthenticatedAppActivityLogsIndexRoute
   '/_authenticated/_app/bot-studio/': typeof AuthenticatedAppBotStudioIndexRoute
   '/_authenticated/_app/home/': typeof AuthenticatedAppHomeIndexRoute
   '/_authenticated/_app/live-exchange/': typeof AuthenticatedAppLiveExchangeIndexRoute
-  '/_authenticated/_app/market-config/': typeof AuthenticatedAppMarketConfigIndexRoute
-  '/_authenticated/_app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/_app/setup/': typeof AuthenticatedAppSetupIndexRoute
   '/_authenticated/_app/strategy-editor/': typeof AuthenticatedAppStrategyEditorIndexRoute
-  '/_authenticated/_app/settings/account/': typeof AuthenticatedAppSettingsAccountIndexRoute
-  '/_authenticated/_app/settings/appearance/': typeof AuthenticatedAppSettingsAppearanceIndexRoute
-  '/_authenticated/_app/settings/display/': typeof AuthenticatedAppSettingsDisplayIndexRoute
-  '/_authenticated/_app/settings/notifications/': typeof AuthenticatedAppSettingsNotificationsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -392,36 +246,22 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/register'
-    | '/activity-logs'
     | '/bot-studio'
     | '/home'
     | '/live-exchange'
-    | '/market-config'
-    | '/settings'
     | '/setup'
     | '/strategy-editor'
-    | '/settings/account'
-    | '/settings/appearance'
-    | '/settings/display'
-    | '/settings/notifications'
   fileRoutesByTo: FileRoutesByTo
   to:
     | ''
     | '/'
     | '/auth/login'
     | '/auth/register'
-    | '/activity-logs'
     | '/bot-studio'
     | '/home'
     | '/live-exchange'
-    | '/market-config'
-    | '/settings'
     | '/setup'
     | '/strategy-editor'
-    | '/settings/account'
-    | '/settings/appearance'
-    | '/settings/display'
-    | '/settings/notifications'
   id:
     | '__root__'
     | '/_authenticated'
@@ -429,18 +269,11 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/'
     | '/auth/login/'
     | '/auth/register/'
-    | '/_authenticated/_app/activity-logs/'
     | '/_authenticated/_app/bot-studio/'
     | '/_authenticated/_app/home/'
     | '/_authenticated/_app/live-exchange/'
-    | '/_authenticated/_app/market-config/'
-    | '/_authenticated/_app/settings/'
     | '/_authenticated/_app/setup/'
     | '/_authenticated/_app/strategy-editor/'
-    | '/_authenticated/_app/settings/account/'
-    | '/_authenticated/_app/settings/appearance/'
-    | '/_authenticated/_app/settings/display/'
-    | '/_authenticated/_app/settings/notifications/'
   fileRoutesById: FileRoutesById
 }
 
@@ -482,18 +315,11 @@ export const routeTree = rootRoute
       "parent": "/_authenticated",
       "children": [
         "/_authenticated/_app/",
-        "/_authenticated/_app/activity-logs/",
         "/_authenticated/_app/bot-studio/",
         "/_authenticated/_app/home/",
         "/_authenticated/_app/live-exchange/",
-        "/_authenticated/_app/market-config/",
-        "/_authenticated/_app/settings/",
         "/_authenticated/_app/setup/",
-        "/_authenticated/_app/strategy-editor/",
-        "/_authenticated/_app/settings/account/",
-        "/_authenticated/_app/settings/appearance/",
-        "/_authenticated/_app/settings/display/",
-        "/_authenticated/_app/settings/notifications/"
+        "/_authenticated/_app/strategy-editor/"
       ]
     },
     "/_authenticated/_app/": {
@@ -505,10 +331,6 @@ export const routeTree = rootRoute
     },
     "/auth/register/": {
       "filePath": "auth/register/index.tsx"
-    },
-    "/_authenticated/_app/activity-logs/": {
-      "filePath": "_authenticated/_app/activity-logs/index.tsx",
-      "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/bot-studio/": {
       "filePath": "_authenticated/_app/bot-studio/index.tsx",
@@ -522,36 +344,12 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/_app/live-exchange/index.tsx",
       "parent": "/_authenticated/_app"
     },
-    "/_authenticated/_app/market-config/": {
-      "filePath": "_authenticated/_app/market-config/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
-    "/_authenticated/_app/settings/": {
-      "filePath": "_authenticated/_app/settings/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
     "/_authenticated/_app/setup/": {
       "filePath": "_authenticated/_app/setup/index.tsx",
       "parent": "/_authenticated/_app"
     },
     "/_authenticated/_app/strategy-editor/": {
       "filePath": "_authenticated/_app/strategy-editor/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
-    "/_authenticated/_app/settings/account/": {
-      "filePath": "_authenticated/_app/settings/account/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
-    "/_authenticated/_app/settings/appearance/": {
-      "filePath": "_authenticated/_app/settings/appearance/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
-    "/_authenticated/_app/settings/display/": {
-      "filePath": "_authenticated/_app/settings/display/index.tsx",
-      "parent": "/_authenticated/_app"
-    },
-    "/_authenticated/_app/settings/notifications/": {
-      "filePath": "_authenticated/_app/settings/notifications/index.tsx",
       "parent": "/_authenticated/_app"
     }
   }

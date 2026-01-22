@@ -260,9 +260,10 @@ function BotCard({ bot, strategies, onRemove, onUpdate }: BotCardProps) {
         variant="ghost"
         size="icon"
         onClick={() => onRemove(bot.id)}
-        className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-red-500 rounded-lg transition-all"
+        className="absolute top-0 right-2 hover:bg-red-500/10 text-red-500"
+        title="Remove Bot"
       >
-        <X size={14} />
+        <X />
       </Button>
 
       <div className="grid grid-cols-2 gap-3">
@@ -371,10 +372,9 @@ function ManualBotConfig({ bots, strategies, isOpen, onToggle, onAddBot, onRemov
 
           <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border/10">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={onAddBot}
-              className="rounded-xl text-primary hover:bg-primary/5 font-black uppercase tracking-widest text-[10px] h-9 px-4 transition-all"
             >
               <Plus className="h-3.5 w-3.5 mr-2" />
               Add Bot
@@ -470,10 +470,10 @@ function QuickBotConfigForm({
                   variant="ghost"
                   size="icon"
                   onClick={() => onRemoveQuickStrategy(quickStrategy.id)}
-                  className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
+                  className="hover:bg-red-500/10 text-red-500"
                   title="Remove Strategy"
                 >
-                  <X size={14} />
+                  <X />
                 </Button>
               </div>
               {index < quickStrategies.length - 1 && (
@@ -485,11 +485,10 @@ function QuickBotConfigForm({
 
         <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border/10">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={onAddQuickStrategy}
             disabled={strategies.length === 0 || strategiesStatus === 'loading'}
-            className="rounded-xl text-primary hover:bg-primary/5 font-black uppercase tracking-widest text-[10px] h-9 px-4 transition-all"
           >
             <Plus className="h-3.5 w-3.5 mr-2" />
             Add Strategy
@@ -657,13 +656,9 @@ function BotConfigPanel({
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              variant="ghost"
+              variant="default"
               onClick={onCreateBots}
               disabled={isCreatingBots}
-              className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${isCreatingBots
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-95'
-                }`}
             >
               {isCreatingBots ? (
                 <>
@@ -679,13 +674,10 @@ function BotConfigPanel({
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="default"
               onClick={onStartBots}
               disabled={isStartingBots}
-              className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${isStartingBots
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-emerald-600 text-white hover:bg-emerald-600/90 hover:scale-[1.02] active:scale-95'
-                }`}
+              className='bg-green-700'
             >
               {isStartingBots ? (
                 <>
@@ -701,13 +693,10 @@ function BotConfigPanel({
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="default"
               onClick={onStopBots}
               disabled={isStoppingBots}
-              className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${isStoppingBots
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-orange-600 text-white hover:bg-orange-600/90 hover:scale-[1.02] active:scale-95'
-                }`}
+              className="bg-red-700"
             >
               {isStoppingBots ? (
                 <>

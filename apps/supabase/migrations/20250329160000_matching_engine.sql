@@ -104,6 +104,7 @@ BEGIN
         SELECT * FROM orders
         WHERE stock_id = NEW.stock_id
           AND status = 'OPEN'
+          AND id != NEW.id
           AND trader_id != NEW.trader_id -- Self-trade prevention (simple)
           AND type = (CASE WHEN NEW.type = 'BUY' THEN 'SELL' ELSE 'BUY' END)
           AND (

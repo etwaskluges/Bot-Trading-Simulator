@@ -6,7 +6,7 @@ import {
   organizeMarketData,
   executeOrderOperations,
 } from "./services/dataService";
-import { determineOrdersToCancell, createOrderIfValid } from "./services/orderService";
+import { createOrderIfValid } from "./services/orderService";
 import { StrategyEvaluator, parseRuleSet } from "./services/strategyService";
 import { sessionManager } from "./session/sessionManager";
 
@@ -24,9 +24,13 @@ export async function tick(context: BotTickContext): Promise<void> {
   const { strategyEvaluator, priceTracker, sessionId, ownerId } = context;
 
   const marketData = await fetchMarketData();
-
-  const shouldFilterByOwner = ownerId && isUuid(ownerId);
-  if (shouldFilterByOwner) {
+  const sessionTag = sessionId.slice(0, 6);
+  const hasOwnerId = typeof ownerId === "string" && ownerId.trim().length > 0;
+  if (hasOwnerId) {
+    if (!isUuid(ownerId)) {
+      console.warn(`[${sessionTag}] ⚠️ Invalid ownerId provided, skipping tick`);
+      return;
+    }
     // Owner-specific session: only run this owner's bots
     const allowedBots = marketData.bots.filter((bot) => bot.user_id === ownerId);
     const allowedBotIds = new Set(allowedBots.map((bot) => bot.id));
@@ -78,7 +82,6 @@ export async function tick(context: BotTickContext): Promise<void> {
 
   const ordersToInsert: NewOrder[] = [];
   const ordersToCancelIds: string[] = [];
-  const sessionTag = sessionId.slice(0, 6);
   const evaluatorByStrategyId = new Map<string, StrategyEvaluator>();
 
   for (const stock of marketData.stocks) {
@@ -105,7 +108,6 @@ export async function tick(context: BotTickContext): Promise<void> {
       const botOrders = ordersByBot.get(bot.id) || [];
       const stockOrders = botOrders.filter((o) => o.stock_id === stock.id);
       const sharesOwned = portfolioByBotAndStock.get(`${bot.id}-${stock.id}`) || 0;
-      const strategyLabel = bot.strategy ?? "random";
       const evaluatorOverride = strategyEvaluator ?? null;
       let evaluatorForBot = evaluatorOverride;
 
@@ -123,20 +125,8 @@ export async function tick(context: BotTickContext): Promise<void> {
       }
 
       if (stockOrders.length > 0) {
-        determineOrdersToCancell(
-          stockOrders,
-          strategyLabel,
-          priceContext,
-          ordersToCancelIds,
-          botAvailableBalance,
-          bot.id
-        );
-
-        // Only skip createOrderIfValid for random/momentum strategies that still have orders
-        // Custom strategies handle cancellation in createOrderIfValid
-        const hasCustomStrategy = !!evaluatorForBot;
         const keepingOrder = stockOrders.find((o) => !ordersToCancelIds.includes(o.id));
-        if (keepingOrder && !hasCustomStrategy) continue;
+        if (keepingOrder) continue;
       }
 
       await createOrderIfValid(

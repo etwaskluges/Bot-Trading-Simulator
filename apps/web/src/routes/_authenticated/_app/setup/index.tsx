@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { getSupabaseServerClient } from '~/lib/utils/supabase/server'
 import { Shield, CheckCircle2, Loader2, Plus, Play, X, BarChartIcon, Users } from 'lucide-react'
 import { Button } from '~/lib/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/lib/components/ui/table'
 import { isCurrentUserModeratorFn } from '~/lib/server/isCurrentUserModerator'
 
 // Server function to check user count and role
@@ -124,7 +123,7 @@ function StockCard({ stock, onRemove, onUpdate }: StockCardProps) {
         variant="ghost"
         size="icon"
         onClick={() => onRemove(stock.id)}
-        className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-red-500 rounded-lg transition-all"
+        className="absolute top-0 right-2 hover:bg-red-500/10 text-red-500"
       >
         <X size={14} />
       </Button>
@@ -202,11 +201,10 @@ function StockConfigPanel({ stocks, onAddStock, onRemoveStock, onUpdateStock }: 
 
       <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border/10">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={onAddStock}
-          className="rounded-xl text-primary hover:bg-primary/5 font-black uppercase tracking-widest text-[10px] h-9 px-4 transition-all"
-        >
+         >
           <Plus className="h-3.5 w-3.5 mr-2" />
           Add Asset
         </Button>
@@ -228,13 +226,9 @@ function SeedAction({ isSeeding, status, onSeed }: SeedActionProps) {
       <div className="flex items-center gap-6">
         <Button
           type="button"
-          variant="ghost"
+          variant="default"
           onClick={onSeed}
           disabled={isSeeding}
-          className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${isSeeding
-            ? 'bg-muted text-muted-foreground cursor-not-allowed'
-            : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-95'
-            }`}
         >
           {isSeeding ? (
             <>
