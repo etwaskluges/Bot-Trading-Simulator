@@ -1,5 +1,5 @@
 // constants.ts
-import { RuleFact, RuleOperator, StrategyRule } from './-utils/types'
+import type { RuleFact, RuleOperator, StrategyRule } from './-utils/types'
 import { createId, createRuleCondition, createRuleGroup } from './-utils/strategy-rules-conversion'
 
 export const FACT_OPTIONS: Array<{ value: RuleFact; label: string }> = [
