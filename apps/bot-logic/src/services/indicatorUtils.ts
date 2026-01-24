@@ -6,16 +6,6 @@ export type IndicatorKey =
   | `atr:${number}`
   | `supertrend:${number}:${number}`;
 
-const DEFAULTS = {
-  ma: 10,
-  rsi: 14,
-  bollingerPeriod: 20,
-  bollingerMultiplier: 2,
-  atr: 14,
-  supertrendPeriod: 10,
-  supertrendMultiplier: 3,
-};
-
 type ParsedIndicator =
   | { type: "ma"; period: number }
   | { type: "rsi"; period: number }
@@ -111,27 +101,6 @@ export function buildIndicatorFacts(
 
     if (Number.isFinite(value)) {
       facts[key] = value as number;
-    }
-  }
-
-  // Add default indicators if base keys are used without params
-  const baseToKey: Record<string, string> = {
-    ma: `ma:${DEFAULTS.ma}`,
-    rsi: `rsi:${DEFAULTS.rsi}`,
-    bollingerUpper: `bollingerUpper:${DEFAULTS.bollingerPeriod}:${DEFAULTS.bollingerMultiplier}`,
-    bollingerLower: `bollingerLower:${DEFAULTS.bollingerPeriod}:${DEFAULTS.bollingerMultiplier}`,
-    atr: `atr:${DEFAULTS.atr}`,
-    supertrend: `supertrend:${DEFAULTS.supertrendPeriod}:${DEFAULTS.supertrendMultiplier}`,
-  };
-
-  for (const [base, key] of Object.entries(baseToKey)) {
-    if (!indicatorKeySet.has(base)) continue;
-      if (!facts[base] && !facts[key]) {
-      const parsed = parseIndicatorKey(key);
-      if (!parsed) continue;
-      const computed = buildIndicatorFacts(history, [key]);
-      const computedValue = computed[key];
-        if (Number.isFinite(computedValue)) facts[base] = computedValue;
     }
   }
 

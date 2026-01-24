@@ -1,6 +1,6 @@
 import type { BotData, OrderData, PriceContext, NewOrder } from "../types";
 import type { RuleProperties } from "json-rules-engine";
-import { PRICE_BUFFER_PERCENT, TICK_RATE_MS } from "../config";
+import { TICK_RATE_MS } from "../config";
 import { StrategyEvaluator } from "./strategyService";
 import type { StrategyFacts, StrategyDecision } from "./strategyService";
 import { buildIndicatorFacts, parseIndicatorKey } from "./indicatorUtils";
@@ -245,8 +245,6 @@ function generateQuantityFromDecision(
 }
 
 export function calculateLimitPrice({
-  strategy,
-  action,
   currentPrice,
   params,
 }: {
@@ -275,20 +273,6 @@ export function calculateLimitPrice({
   if (paramType === "market") {
     return currentPrice;
   }
-
-  const priceBuffer = Math.floor(currentPrice * PRICE_BUFFER_PERCENT);
-
-  if (strategy === "random") {
-    const isAggressive = Math.random() > 0.5;
-
-    if (action === "BUY") {
-      return isAggressive ? currentPrice + priceBuffer : currentPrice - priceBuffer;
-    }
-
-    return isAggressive ? currentPrice - priceBuffer : currentPrice + priceBuffer;
-  }
-
-  return currentPrice;
 }
 
 export function generateQuantity(): number {

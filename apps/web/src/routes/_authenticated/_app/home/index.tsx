@@ -75,7 +75,7 @@ export const Route = createFileRoute('/_authenticated/_app/home/')({
 function LandingPage() {
 
   return (
-    <div className="min-h-screen bg-background p-3 md:p-8 overflow-x-hidden">
+    <div className="bg-background p-3 overflow-x-hidden">
       <div className="max-w-[1600px] w-full mx-auto space-y-8 md:space-y-12">
 
         {/* HERO SECTION */}

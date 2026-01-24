@@ -252,7 +252,7 @@ const CreateStrategyForm = ({
             id="create-strategy-name"
             value={strategyName}
             placeholder="e.g. Scalping BTC - aggressive"
-            className="h-12 bg-transparent border-border/50 focus:ring-primary/20 rounded-xl px-4 text-sm font-bold"
+            className="h-11 px-4 text-sm font-bold"
             onChange={(event) => onStrategyNameChange(event.target.value)}
           />
         </div>
@@ -269,14 +269,9 @@ const CreateStrategyForm = ({
 
         <Button
           type="button"
-          variant="ghost"
+          variant="default"
           onClick={onCreateStrategy}
           disabled={!strategyName.trim()}
-          className={`relative px-8 py-3 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2.5 transition-all duration-300 shadow-lg min-w-[200px] justify-center ${
-            !strategyName.trim()
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-95'
-          }`}
         >
           <Plus size={16} className="fill-current" />
           Create new Strategy
@@ -295,8 +290,7 @@ type StrategyListItemProps = {
 const StrategyListItem = ({ strategy, onSelect, onDelete }: StrategyListItemProps) => {
   return (
     <button
-      type="button"
-      className="group border-border/30 bg-background/30 hover:bg-muted/30 flex items-center justify-between rounded-2xl border px-5 py-4 transition-all duration-300 cursor-pointer w-full text-left"
+      className="group border-border/80 bg-background/30 hover:bg-muted/30 flex items-center justify-between rounded-2xl border px-5 py-4 transition-all duration-300 cursor-pointer w-full text-left"
       onClick={() => onSelect(strategy)}
     >
       <div className="space-y-1">
@@ -312,11 +306,11 @@ const StrategyListItem = ({ strategy, onSelect, onDelete }: StrategyListItemProp
             e.stopPropagation()
             onDelete(strategy.id)
           }}
-          className="h-8 w-8 rounded-full bg-red-500/5 hover:bg-red-500/10 text-red-500 opacity-70 group-hover:opacity-100 transition-all"
+          className="bg-red-500/5 hover:bg-red-500/10 text-red-500"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
-        <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary opacity-70 group-hover:opacity-100 transition-all">
+        <div className="rounded-md h-8 w-8 bg-primary/5 flex items-center justify-center text-primary opacity-70 group-hover:opacity-100 transition-all">
           <ArrowLeft className="h-4 w-4 rotate-180" />
         </div>
       </div>
@@ -390,7 +384,6 @@ const EditorHeader = ({
           variant="outline"
           size="icon"
           onClick={onBack}
-          className="rounded-full border-border/50 hover:bg-primary/5 hover:text-primary hover:border-primary/50 transition-all"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -407,14 +400,13 @@ const EditorHeader = ({
         <Button
           variant="ghost"
           onClick={onBack}
-          className="rounded-xl text-muted-foreground hover:text-foreground font-bold uppercase tracking-widest text-[10px] h-11 px-6"
+          className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]"
         >
           Discard Changes
         </Button>
         <Button
           disabled={!isValid || !strategyName.trim()}
           onClick={onSave}
-          className="rounded-xl font-bold uppercase tracking-widest text-[10px] h-11 px-8 transition-all hover:scale-[1.02] active:scale-95 shadow-lg hover:shadow-primary/25"
         >
           <Save className="mr-2 h-4 w-4" />
           {isSaving ? 'Saving...' : 'Save Strategy'}
@@ -455,7 +447,7 @@ const RulesBuilderSection = ({
             id="edit-strategy-name"
             value={strategyName}
             placeholder="Strategy name"
-            className="h-11 bg-transparent border-border/50 focus:ring-primary/20 rounded-xl px-4 text-sm font-bold"
+            className="h-11 px-4 text-sm font-bold"
             onChange={(event) => onStrategyNameChange(event.target.value)}
           />
         </div>
@@ -487,9 +479,7 @@ const RulesBuilderSection = ({
         {!isValid && <ValidationErrors issues={issues} />}
 
         <div className="min-h-[600px]">
-          <ScrollArea className="h-[700px] w-full pr-4">
-            <RuleEditor rules={strategyRules} onUpdateRules={onUpdateRules} />
-          </ScrollArea>
+          <RuleEditor rules={strategyRules} onUpdateRules={onUpdateRules} />
         </div>
       </div>
     </div>
@@ -524,7 +514,7 @@ const JsonPreviewSection = ({ jsonPreview }: JsonPreviewSectionProps) => {
         <Textarea
           value={jsonPreview}
           readOnly
-          className="min-h-[644px] bg-muted/20 border-border/30 rounded-3xl font-mono text-[11px] leading-relaxed p-8 focus:ring-0 resize-none shadow-inner"
+          className="min-h-[400px] font-mono text-[11px] p-8"
         />
       </div>
     </div>

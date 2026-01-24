@@ -124,11 +124,6 @@ export async function tick(context: BotTickContext): Promise<void> {
         }
       }
 
-      if (stockOrders.length > 0) {
-        const keepingOrder = stockOrders.find((o) => !ordersToCancelIds.includes(o.id));
-        if (keepingOrder) continue;
-      }
-
       await createOrderIfValid(
         {
           bot,

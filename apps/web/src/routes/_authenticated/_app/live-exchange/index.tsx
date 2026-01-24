@@ -1,8 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { postgres_db, schema } from '@vibe-coding-boilerplate/db-drizzle'
-import { desc, eq, and, sql } from 'drizzle-orm'
 import {
   AreaChart,
   Area,
@@ -23,8 +20,11 @@ import {
   startBotSessionFn,
   stopBotSessionFn,
 } from '~/lib/server/botSessions'
-
-type Timespan = '5m' | '10m' | '1h' | '1d';
+import {
+  getAllMarketStocks,
+  getMarketDataForSymbol,
+  type Timespan
+} from '~/lib/utils/get-db-data'
 
 const timespanOptions: { value: Timespan; label: string; ms: number }[] = [
   { value: '5m', label: '5m', ms: 5 * 60 * 1000 },
@@ -61,147 +61,6 @@ const DEFAULT_RULE_SET = [
 ];
 
 const DEFAULT_RULE_JSON = JSON.stringify(DEFAULT_RULE_SET, null, 2);
-
-// 1. SERVER FUNCTION: Get all stocks (for dropdown)
-const getAllStocks = createServerFn({ method: 'GET' }).handler(async () => {
-  const stocks = await postgres_db
-    .select()
-    .from(schema.stocks)
-    .orderBy(schema.stocks.symbol)
-
-  return stocks
-})
-
-// 2. SERVER FUNCTION: Get market data for a specific stock
-const getMarketData = createServerFn({ method: 'GET' })
-  .validator((data: { symbol: string, timespan: Timespan }) => data)
-  .handler(async ({ data }) => {
-    const { symbol, timespan } = data
-
-    // A. Get Stock Info
-    const stocks = await postgres_db
-      .select()
-      .from(schema.stocks)
-      .where(eq(schema.stocks.symbol, symbol))
-      .limit(1)
-
-    if (!stocks.length) return null
-    const stock = stocks[0]
-
-    let intervalValue;
-    let bucketSql;
-    switch (timespan) {
-      case '5m':
-        intervalValue = sql`now() - interval '5 minutes'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 2) * 2)`; // 2s buckets
-        break;
-      case '10m':
-        intervalValue = sql`now() - interval '10 minutes'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 4) * 4)`; // 4s buckets
-        break;
-      case '1h':
-        intervalValue = sql`now() - interval '1 hour'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 25) * 25)`; // 25s buckets
-        break;
-      case '1d':
-        intervalValue = sql`now() - interval '1 day'`;
-        bucketSql = sql`to_timestamp(floor(extract(epoch from ${schema.trades.executed_at}) / 600) * 600)`; // 10m buckets
-        break;
-      default:
-        intervalValue = sql`now() - interval '5 minutes'`;
-        bucketSql = null;
-        break;
-    }
-
-    // B. Get Recent Trades (For Chart)
-    const trades = bucketSql
-      ? await postgres_db
-        .select({
-          executed_at: sql<string>`${bucketSql}`.as('executed_at'),
-          execution_price_cents: sql<string>`avg(${schema.trades.execution_price_cents})`.as('execution_price_cents'),
-        })
-        .from(schema.trades)
-        .where(and(
-          eq(schema.trades.stock_id, stock.id),
-          sql`${schema.trades.executed_at} >= ${intervalValue}`
-        ))
-        .groupBy(sql`1`)
-        .orderBy(sql`1 desc`)
-        .limit(1000)
-      : await postgres_db
-        .select()
-        .from(schema.trades)
-        .where(and(
-          eq(schema.trades.stock_id, stock.id),
-          sql`${schema.trades.executed_at} >= ${intervalValue}`
-        ))
-        .orderBy(desc(schema.trades.executed_at))
-        .limit(1000)
-
-    // C. Get Open Orders (Order Book)
-    const orders = await postgres_db
-      .select()
-      .from(schema.orders)
-      .where(
-        and(
-          eq(schema.orders.stock_id, stock.id),
-          eq(schema.orders.status, 'OPEN')
-        )
-      )
-      .orderBy(desc(schema.orders.created_at))
-
-    // D. Get Bot Portfolios for this stock
-    const botPortfolios = await postgres_db
-      .select({
-        trader_id: schema.traders.id,
-        trader_name: schema.traders.name,
-        strategy: schema.traders.strategy,
-        balance_cents: schema.traders.balance_cents,
-        shares_owned: schema.portfolios.shares_owned,
-        user_id: schema.traders.user_id,
-      })
-      .from(schema.traders)
-      .innerJoin(schema.portfolios, eq(schema.traders.id, schema.portfolios.trader_id))
-      .where(
-        and(
-          eq(schema.traders.is_bot, true),
-          eq(schema.portfolios.stock_id, stock.id)
-        )
-      )
-
-    // Sort numerically (Bot 1, Bot 2 ... Bot 10) instead of alphabetically
-    botPortfolios.sort((a, b) =>
-      (a.trader_name || '').localeCompare(b.trader_name || '', undefined, { numeric: true, sensitivity: 'base' })
-    )
-
-    // E. Get recent bot orders for this stock
-    const recentBotOrders = await postgres_db
-      .select({
-        trader_id: schema.orders.trader_id,
-        type: schema.orders.type,
-        quantity: schema.orders.quantity,
-        limit_price_cents: schema.orders.limit_price_cents,
-        status: schema.orders.status,
-      })
-      .from(schema.orders)
-      .innerJoin(schema.traders, eq(schema.orders.trader_id, schema.traders.id))
-      .where(
-        and(
-          eq(schema.orders.stock_id, stock.id),
-          eq(schema.traders.is_bot, true)
-        )
-      )
-      .orderBy(desc(schema.orders.created_at))
-      .limit(50)
-
-    return {
-      stock,
-      trades: trades.reverse(),
-      orders,
-      botPortfolios,
-      recentBotOrders
-    }
-  })
 
 // 3. SUBCOMPONENTS
 
@@ -809,7 +668,7 @@ const BoersePage = () => {
   // Fetch all stocks for dropdown
   const { data: allStocks, isLoading: isLoadingStocks, error: stocksError } = useQuery({
     queryKey: ['all-stocks'],
-    queryFn: () => getAllStocks(),
+    queryFn: () => getAllMarketStocks(),
   })
 
   // Synchronization: If no symbol selected, or selected symbol disappeared, pick the first available
@@ -832,7 +691,7 @@ const BoersePage = () => {
   // Fetch data for selected stock
   const { data, isLoading: isLoadingMarket } = useQuery({
     queryKey: ['boerse-data', selectedSymbol, timespan],
-    queryFn: () => getMarketData({ data: { symbol: selectedSymbol!, timespan } }),
+    queryFn: () => getMarketDataForSymbol({ data: { symbol: selectedSymbol!, timespan } }),
     refetchInterval: 1000,
     enabled: !!selectedSymbol
   })
